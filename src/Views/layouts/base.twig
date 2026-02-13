@@ -36,13 +36,10 @@
             {% endif %}
 
             {% for item in nav_items %}
+            {% set is_active = active_nav is defined and active_nav == item.icon %}
             <a href="{{ item.url }}"
-               class="flex items-center gap-3 rounded-lg text-[13px] font-medium transition-colors duration-150"
+               class="flex items-center gap-3 rounded-lg text-[13px] font-medium transition-colors duration-150 {{ is_active ? 'text-sidebar-text-active bg-sidebar-hover' : 'text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover' }}"
                :class="sidebarOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
-               {% set is_active = active_nav is defined and active_nav == item.icon %}
-               style="color: {{ is_active ? 'var(--color-sidebar-text-active)' : 'var(--color-sidebar-text)' }}; background: {{ is_active ? 'var(--color-sidebar-hover)' : 'transparent' }};"
-               onmouseover="{% if not is_active %}this.style.background='var(--color-sidebar-hover)'{% endif %}"
-               onmouseout="{% if not is_active %}this.style.background='transparent'{% endif %}"
             >
                 {% if item.icon == 'dashboard' %}
                     <svg class="shrink-0 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>

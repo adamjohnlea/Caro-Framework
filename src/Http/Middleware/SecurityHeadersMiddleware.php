@@ -19,7 +19,7 @@ final class SecurityHeadersMiddleware implements MiddlewareInterface
         $response->headers->set('X-XSS-Protection', '0');
         $response->headers->set(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;",
+            "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;",
         );
         $response->headers->set(
             'Permissions-Policy',
