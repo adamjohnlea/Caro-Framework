@@ -11,6 +11,7 @@ use App\Http\Middleware\CsrfMiddleware;
 use App\Http\Middleware\MiddlewareInterface;
 use App\Http\MiddlewareProviderInterface;
 use App\Http\RouteAccessProviderInterface;
+use App\Http\RouteAccessRegistry;
 use App\Http\RouteProviderInterface;
 use App\Http\Router;
 use App\Modules\Auth\Application\Services\AuthenticationService;
@@ -105,11 +106,13 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
     {
         /** @var AuthenticationService $authService */
         $authService = $this->container->get(AuthenticationService::class);
+        /** @var RouteAccessRegistry $registry */
+        $registry = $this->container->get(RouteAccessRegistry::class);
 
         return [
-            new AuthenticationMiddleware($authService),
+            new AuthenticationMiddleware($authService, $registry),
             new CsrfMiddleware($authService),
-            new AuthorizationMiddleware($authService),
+            new AuthorizationMiddleware($authService, $registry),
         ];
     }
 

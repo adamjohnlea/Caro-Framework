@@ -14,6 +14,8 @@ use App\Http\ControllerDispatcher;
 use App\Http\Middleware\MiddlewarePipeline;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\MiddlewareProviderInterface;
+use App\Http\RouteAccessProviderInterface;
+use App\Http\RouteAccessRegistry;
 use App\Http\RouteProviderInterface;
 use App\Http\Router;
 use App\Modules\Auth\AuthServiceProvider;
@@ -89,6 +91,10 @@ $container->set(HealthController::class, static function () use ($container): He
 
 $container->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new EventDispatcher());
 
+$routeAccessRegistry = new RouteAccessRegistry();
+$routeAccessRegistry->addPublicRoute('/health');
+$container->set(RouteAccessRegistry::class, static fn (): RouteAccessRegistry => $routeAccessRegistry);
+
 // ── Module Service Providers ──────────────────────────────────────────
 
 if ($config['modules']['auth']) {
@@ -106,6 +112,19 @@ if ($config['modules']['queue']) {
 
 // Boot all providers (runs boot() methods)
 $container->boot();
+
+// Collect route access from providers
+foreach ($container->getProviders() as $provider) {
+    if ($provider instanceof RouteAccessProviderInterface) {
+        $access = $provider->routeAccess();
+        foreach ($access['public'] ?? [] as $route) {
+            $routeAccessRegistry->addPublicRoute($route);
+        }
+        foreach ($access['admin'] ?? [] as $prefix) {
+            $routeAccessRegistry->addAdminPrefix($prefix);
+        }
+    }
+}
 
 // ── Routes ───────────────────────────────────────────────────────────
 

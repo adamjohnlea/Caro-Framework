@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\RouteAccessRegistry;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Domain\Models\User;
 use Override;
@@ -13,14 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class AuthenticationMiddleware implements MiddlewareInterface
 {
-    /** @var list<string> */
-    private const array PUBLIC_ROUTES = [
-        '/login',
-        '/health',
-    ];
-
     public function __construct(
         private AuthenticationService $authService,
+        private RouteAccessRegistry $routeAccessRegistry,
     ) {
     }
 
@@ -44,6 +40,9 @@ final readonly class AuthenticationMiddleware implements MiddlewareInterface
 
     private function isPublicRoute(string $path): bool
     {
-        return array_any(self::PUBLIC_ROUTES, fn ($route): bool => $path === $route);
+        return array_any(
+            $this->routeAccessRegistry->getPublicRoutes(),
+            static fn (string $route): bool => $path === $route,
+        );
     }
 }

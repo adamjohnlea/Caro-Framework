@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\RouteAccessRegistry;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Domain\Models\User;
 use Override;
@@ -12,13 +13,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class AuthorizationMiddleware implements MiddlewareInterface
 {
-    /** @var list<string> */
-    private const array ADMIN_ROUTE_PREFIXES = [
-        '/users',
-    ];
-
     public function __construct(
         private AuthenticationService $authService,
+        private RouteAccessRegistry $routeAccessRegistry,
     ) {
     }
 
@@ -42,6 +39,9 @@ final readonly class AuthorizationMiddleware implements MiddlewareInterface
 
     private function isAdminRoute(string $path): bool
     {
-        return array_any(self::ADMIN_ROUTE_PREFIXES, fn ($prefix): bool => str_starts_with($path, $prefix));
+        return array_any(
+            $this->routeAccessRegistry->getAdminPrefixes(),
+            static fn (string $prefix): bool => str_starts_with($path, $prefix),
+        );
     }
 }
