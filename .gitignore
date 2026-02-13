@@ -1,0 +1,45 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build artifacts
+/public/css/app.css
+/public/js/app.js
+/public/js/alpine.min.js
+
+# Storage
+/storage/database.sqlite
+/storage/logs/*
+/storage/cache/*
+!storage/cache/.gitkeep
+!storage/logs/.gitkeep
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# PHPUnit
+/.phpunit.cache/
+/coverage/
+
+# PHPStan
+/.phpstan/
+
+# PHP CS Fixer
+/.php-cs-fixer.cache
+
+# Rector
+/.rector/
+
+# Deptrac
+/.deptrac.cache
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

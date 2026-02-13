@@ -1,0 +1,11 @@
+#!/bin/sh
+
+echo "Running quality checks..."
+composer quality
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Quality checks failed. Commit aborted."
+    echo "Run 'composer quality' to see errors, or 'composer cs-fix' to auto-fix style issues."
+    exit 1
+fi

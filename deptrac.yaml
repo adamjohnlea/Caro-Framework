@@ -1,0 +1,73 @@
+deptrac:
+  paths:
+    - ./src
+
+  layers:
+    # Architectural layers
+    - name: Domain
+      collectors:
+        - type: directory
+          value: src/Modules/.*/Domain/.*
+
+    - name: Application
+      collectors:
+        - type: directory
+          value: src/Modules/.*/Application/.*
+
+    - name: Infrastructure
+      collectors:
+        - type: directory
+          value: src/Modules/.*/Infrastructure/.*
+
+    - name: Http
+      collectors:
+        - type: directory
+          value: src/Http/.*
+
+    - name: Shared
+      collectors:
+        - type: directory
+          value: src/Shared/.*
+
+    - name: Database
+      collectors:
+        - type: directory
+          value: src/Database/.*
+
+    - name: Views
+      collectors:
+        - type: directory
+          value: src/Views/.*
+
+  ruleset:
+    # Domain layer has NO dependencies on other layers (only Shared)
+    Domain:
+      - Shared
+
+    # Application depends on Domain and Shared only
+    Application:
+      - Domain
+      - Shared
+
+    # Infrastructure can depend on Domain, Application, Shared, and Database
+    Infrastructure:
+      - Domain
+      - Application
+      - Shared
+      - Database
+
+    # HTTP layer can depend on Application, Domain, Shared, Database
+    Http:
+      - Application
+      - Domain
+      - Shared
+      - Database
+
+    # Shared can depend on Database (QueryBuilder wraps Database)
+    Shared:
+      - Database
+
+    # Database is infrastructure-level, depends on Shared only
+    Database:
+      - Shared
+

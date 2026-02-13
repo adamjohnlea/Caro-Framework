@@ -1,0 +1,11 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: 10
+    paths:
+        - src
+    excludePaths:
+        - src/Database/Migrations
+    tmpDir: .phpstan
+    reportUnmatchedIgnoredErrors: true

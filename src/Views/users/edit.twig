@@ -1,0 +1,51 @@
+{% extends "layouts/base.twig" %}
+
+{% block title %}Edit User - {{ appName }}{% endblock %}
+
+{% block page_header %}
+    <div class="flex items-center gap-2 text-sm">
+        <a href="/users" class="text-text-muted hover:text-text-secondary transition-colors">Users</a>
+        <span class="text-text-muted">/</span>
+        <span class="text-text-primary font-medium">Edit</span>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg">
+    {% if error is defined %}
+        <div class="bg-error-bg border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <form method="POST" action="/users/{{ user.id }}/update" class="space-y-5">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+        <div>
+            <label for="email" class="block text-sm font-medium text-text-primary mb-1.5">Email</label>
+            <input type="email" name="email" id="email" required
+                   value="{{ user.email.value }}">
+        </div>
+
+        <div>
+            <label for="password" class="block text-sm font-medium text-text-primary mb-1.5">Password</label>
+            <input type="password" name="password" id="password" minlength="8">
+            <p class="mt-1.5 text-xs text-text-muted">Leave blank to keep current password. Minimum 8 characters.</p>
+        </div>
+
+        <div>
+            <label for="role" class="block text-sm font-medium text-text-primary mb-1.5">Role</label>
+            <select name="role" id="role">
+                {% for role in roles %}
+                    <option value="{{ role.value }}" {{ user.role.value == role.value ? 'selected' : '' }}>{{ role.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+            <a href="/users" class="inline-flex items-center h-9 px-4 border border-border rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:border-text-muted transition-colors duration-150">Cancel</a>
+            <button type="submit" class="inline-flex items-center h-9 px-4 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-hover transition-colors duration-150">Update User</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

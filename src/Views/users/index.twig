@@ -1,0 +1,52 @@
+{% extends "layouts/base.twig" %}
+
+{% block title %}Users - {{ appName }}{% endblock %}
+
+{% block page_header %}
+    <h1 class="text-lg font-semibold text-text-primary tracking-tight">Users</h1>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="/users/create" class="inline-flex items-center h-8 px-3 bg-accent text-white text-[13px] font-medium rounded-lg hover:bg-accent-hover transition-colors duration-150">Add User</a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-surface-raised border border-border rounded-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-border-subtle">
+                    <th class="px-5 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Email</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Role</th>
+                    <th class="px-5 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Created</th>
+                    <th class="px-5 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="border-b border-border-subtle last:border-0 hover:bg-accent-subtle transition-colors duration-100">
+                    <td class="px-5 py-3.5 text-sm text-text-primary">{{ user.email.value }}</td>
+                    <td class="px-5 py-3.5">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium {% if user.role.value == 'admin' %}bg-accent text-white{% else %}bg-accent-subtle text-text-secondary{% endif %}">
+                            {{ user.role.label }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-sm text-text-secondary">{{ user.createdAt|date('Y-m-d') }}</td>
+                    <td class="px-5 py-3.5 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="/users/{{ user.id }}/edit" class="inline-flex items-center h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-secondary hover:text-text-primary hover:border-text-muted transition-colors duration-150">Edit</a>
+                            {% if currentUser is defined and currentUser is not null and currentUser.id != user.id %}
+                                <form method="POST" action="/users/{{ user.id }}/delete" class="inline" onsubmit="return confirm('Are you sure you want to delete this user?')">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="inline-flex items-center h-7 px-2.5 text-[12px] font-medium rounded-md border border-red-200 text-danger hover:bg-error-bg transition-colors duration-150">Delete</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

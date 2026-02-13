@@ -1,0 +1,34 @@
+{% extends "layouts/base.twig" %}
+
+{% block title %}Server Error - {{ appName }}{% endblock %}
+
+{% block page_header %}
+    <h1 class="text-sm font-semibold text-text-primary">Server Error</h1>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-16">
+    <div class="text-center mb-8">
+        <p class="text-6xl font-bold text-text-muted mb-4">500</p>
+        <p class="text-sm text-text-secondary">Something went wrong. The error has been logged.</p>
+    </div>
+
+    {% if message is defined %}
+    <div class="bg-error-bg border border-danger/20 rounded-xl p-6 mt-8">
+        <p class="text-sm font-semibold text-danger mb-2">{{ message }}</p>
+        {% if file is defined %}
+        <p class="text-xs text-text-secondary mb-3">{{ file }}:{{ line }}</p>
+        {% endif %}
+        {% if trace is defined %}
+        <pre class="text-xs text-text-secondary overflow-x-auto whitespace-pre-wrap bg-surface rounded-lg p-4 mt-3">{{ trace }}</pre>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-8">
+        <a href="/" class="inline-flex items-center px-4 py-2 text-sm font-medium text-surface-raised bg-accent hover:bg-accent-hover rounded-lg transition-colors">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

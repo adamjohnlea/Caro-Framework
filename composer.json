@@ -1,0 +1,59 @@
+{
+    "name": "my-org/my-app",
+    "description": "A new project",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "monolog/monolog": "^3.5",
+        "symfony/http-foundation": "^7.0",
+        "symfony/routing": "^7.0",
+        "twig/twig": "^3.8",
+        "aws/aws-sdk-php": "^3.300",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.48",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^11.0",
+        "qossmic/deptrac": "^2.0",
+        "rector/rector": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "phpstan": "phpstan analyse --memory-limit=512M",
+        "cs-fix": "php-cs-fixer fix --config=.php-cs-fixer.php",
+        "cs-check": "php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff",
+        "deptrac": "deptrac analyse --config-file=deptrac.yaml",
+        "rector": "rector process --dry-run",
+        "rector:fix": "rector process",
+        "quality": [
+            "@cs-check",
+            "@phpstan",
+            "@deptrac",
+            "@test"
+        ],
+        "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/*",
+        "setup": [
+            "@composer install",
+            "@hooks:install"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}
