@@ -10,6 +10,7 @@ use App\Database\DatabaseFactory;
 use App\Database\MigrationRunner;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
+use App\Http\ControllerDispatcher;
 use App\Http\Middleware\AuthenticationMiddleware;
 use App\Http\Middleware\AuthorizationMiddleware;
 use App\Http\Middleware\CsrfMiddleware;
@@ -138,38 +139,15 @@ $request = Request::createFromGlobals();
 /** @var LoggerInterface $logger */
 $logger = $container->get(LoggerInterface::class);
 
+$dispatcher = new ControllerDispatcher($container);
+
 try {
     $response = $pipeline->handle(
         $request,
-        static function (Request $request) use ($router, $container): Response {
+        static function (Request $request) use ($router, $dispatcher): Response {
             return $router->dispatch(
                 $request,
-                static function (array $parameters, Request $request) use ($container): Response {
-                    $controllerClass = $parameters['_controller'];
-                    $method = $parameters['_method'];
-                    $id = isset($parameters['id']) ? (int) $parameters['id'] : null;
-
-                    /** @var object $controller */
-                    $controller = $container->get($controllerClass);
-
-                    if ($id !== null) {
-                        if ($method === 'update' || $method === 'destroy') {
-                            /** @var Response */
-                            return $controller->{$method}($id, $request);
-                        }
-
-                        /** @var Response */
-                        return $controller->{$method}($id);
-                    }
-
-                    if ($method === 'login' || $method === 'store') {
-                        /** @var Response */
-                        return $controller->{$method}($request);
-                    }
-
-                    /** @var Response */
-                    return $controller->{$method}();
-                },
+                static fn (array $parameters, Request $request): Response => $dispatcher->dispatch($parameters, $request),
             );
         },
     );
