@@ -12,23 +12,47 @@
     <script defer src="{{ asset('js/alpine.min.js') }}"></script>
     {% block head %}{% endblock %}
 </head>
-<body class="bg-surface min-h-screen" x-data="{ sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false' }" x-init="$watch('sidebarOpen', val => localStorage.setItem('sidebarOpen', val))">
+<body class="bg-surface min-h-screen" x-data="{ sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false', mobileMenuOpen: false, confirmModal: { show: false, message: '', formId: '' } }" x-init="$watch('sidebarOpen', val => localStorage.setItem('sidebarOpen', val)); if (window.innerWidth < 768) { sidebarOpen = false; }"
+    @keydown.escape.window="confirmModal.show = false; mobileMenuOpen = false"
+    @resize.window="if (window.innerWidth >= 768) { mobileMenuOpen = false; }">
+
+    {# --- Mobile Backdrop --- #}
+    <div
+        x-show="mobileMenuOpen"
+        @click="mobileMenuOpen = false"
+        class="fixed inset-0 z-40 bg-black/50 md:hidden"
+        x-cloak
+        x-transition.opacity.duration.200ms
+    ></div>
 
     {# --- Sidebar --- #}
     <aside
-        class="fixed inset-y-0 left-0 z-30 bg-sidebar flex flex-col sidebar-transition overflow-hidden"
-        :class="sidebarOpen ? 'w-60' : 'w-16'"
+        class="fixed inset-y-0 left-0 z-50 bg-sidebar flex flex-col sidebar-transition overflow-hidden md:z-30"
+        :class="{
+            'w-60': sidebarOpen || mobileMenuOpen,
+            'w-16': !sidebarOpen && !mobileMenuOpen,
+            '-translate-x-full md:translate-x-0': !mobileMenuOpen && window.innerWidth < 768
+        }"
     >
         {# Logo #}
-        <div class="flex items-center h-14 border-b border-sidebar-border" :class="sidebarOpen ? 'px-5' : 'px-0 justify-center'">
+        <div class="flex items-center justify-between h-14 border-b border-sidebar-border" :class="sidebarOpen || mobileMenuOpen ? 'px-5' : 'px-0 justify-center'">
             <a href="{{ path('home') }}" class="flex items-center gap-3 min-w-0">
                 <svg class="shrink-0 w-6 h-6 text-sidebar-text-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                <span class="text-sm font-semibold text-sidebar-text-active whitespace-nowrap" x-show="sidebarOpen" x-cloak x-transition.opacity.duration.150ms>{{ appName }}</span>
+                <span class="text-sm font-semibold text-sidebar-text-active whitespace-nowrap" x-show="sidebarOpen || mobileMenuOpen" x-cloak x-transition.opacity.duration.150ms>{{ appName }}</span>
             </a>
+            {# Mobile close button #}
+            <button
+                @click="mobileMenuOpen = false"
+                class="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover transition-colors duration-150"
+                x-show="mobileMenuOpen"
+                x-cloak
+            >
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
 
         {# Navigation #}
-        <nav class="flex-1 py-4 space-y-1" :class="sidebarOpen ? 'px-3' : 'px-2'">
+        <nav class="flex-1 py-4 space-y-1" :class="sidebarOpen || mobileMenuOpen ? 'px-3' : 'px-2'">
             {% set nav_items = [{url: path('home'), label: 'Dashboard', icon: 'dashboard'}] %}
 
             {% if authEnabled is defined and authEnabled %}
@@ -39,36 +63,40 @@
             {% set is_active = active_nav is defined and active_nav == item.icon %}
             <a href="{{ item.url }}"
                class="flex items-center gap-3 rounded-lg text-[13px] font-medium transition-colors duration-150 {{ is_active ? 'text-sidebar-text-active bg-sidebar-hover' : 'text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover' }}"
-               :class="sidebarOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
+               :class="sidebarOpen || mobileMenuOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
+               @click="mobileMenuOpen = false"
             >
                 {% if item.icon == 'dashboard' %}
                     <svg class="shrink-0 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 {% elseif item.icon == 'users' %}
                     <svg class="shrink-0 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 {% endif %}
-                <span class="whitespace-nowrap" x-show="sidebarOpen" x-cloak x-transition.opacity.duration.150ms>{{ item.label }}</span>
+                <span class="whitespace-nowrap" x-show="sidebarOpen || mobileMenuOpen" x-cloak x-transition.opacity.duration.150ms>{{ item.label }}</span>
             </a>
             {% endfor %}
         </nav>
 
         {# Footer: user + collapse #}
-        <div class="border-t border-sidebar-border" :class="sidebarOpen ? 'p-3' : 'p-2'">
+        <div class="border-t border-sidebar-border" :class="sidebarOpen || mobileMenuOpen ? 'p-3' : 'p-2'">
             {% if currentUser is defined and currentUser %}
-            <div class="flex items-center gap-3 mb-2" :class="sidebarOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'">
+            <div class="flex items-center gap-3 mb-2" :class="sidebarOpen || mobileMenuOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'">
                 <span class="shrink-0 flex items-center justify-center w-[18px] h-[18px] rounded-full bg-sidebar-hover text-[10px] font-bold text-sidebar-text-active">{{ currentUser.email.value|first|upper }}</span>
-                <span class="text-[12px] text-sidebar-text truncate" x-show="sidebarOpen" x-cloak x-transition.opacity.duration.150ms>{{ currentUser.email.value }}</span>
+                <span class="text-[12px] text-sidebar-text truncate" x-show="sidebarOpen || mobileMenuOpen" x-cloak x-transition.opacity.duration.150ms>{{ currentUser.email.value }}</span>
             </div>
-            <a href="{{ path('logout') }}"
-               class="flex items-center gap-3 w-full rounded-lg text-[13px] font-medium text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover transition-colors duration-150 mb-2"
-               :class="sidebarOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
-            >
-                <svg class="shrink-0 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                <span class="whitespace-nowrap" x-show="sidebarOpen" x-cloak x-transition.opacity.duration.150ms>Logout</span>
-            </a>
+            <form method="POST" action="{{ path('logout') }}" class="mb-2">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="flex items-center gap-3 w-full rounded-lg text-[13px] font-medium text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover transition-colors duration-150"
+                        :class="sidebarOpen || mobileMenuOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
+                >
+                    <svg class="shrink-0 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span class="whitespace-nowrap" x-show="sidebarOpen || mobileMenuOpen" x-cloak x-transition.opacity.duration.150ms>Logout</span>
+                </button>
+            </form>
             {% endif %}
             <button
                 @click="sidebarOpen = !sidebarOpen"
-                class="flex items-center gap-3 w-full rounded-lg text-[13px] font-medium text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover transition-colors duration-150"
+                class="hidden md:flex items-center gap-3 w-full rounded-lg text-[13px] font-medium text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover transition-colors duration-150"
                 :class="sidebarOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
             >
                 <svg class="shrink-0 w-[18px] h-[18px] transition-transform duration-200" :class="sidebarOpen ? '' : 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m14 9-3 3 3 3"/></svg>
@@ -79,12 +107,19 @@
 
     {# --- Main Content --- #}
     <main
-        class="min-h-screen content-transition"
-        :class="sidebarOpen ? 'ml-60' : 'ml-16'"
+        class="min-h-screen content-transition md:ml-16"
+        :class="{ 'md:ml-60': sidebarOpen }"
         role="main"
     >
         {# Top bar #}
-        <header class="h-14 border-b border-border flex items-center justify-between px-8">
+        <header class="h-14 border-b border-border flex items-center justify-between px-4 md:px-8">
+            {# Mobile hamburger menu button #}
+            <button
+                @click="mobileMenuOpen = true"
+                class="md:hidden flex items-center justify-center w-9 h-9 -ml-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-accent-subtle transition-colors duration-150"
+            >
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
             <div>
                 {% block page_header %}{% endblock %}
             </div>
@@ -95,7 +130,7 @@
 
         {# Flash messages #}
         {% if has_flash() %}
-            <div class="px-8 pt-4">
+            <div class="px-4 md:px-8 pt-4">
                 {% for message in flash_messages() %}
                     <div class="mb-2 px-4 py-3 rounded-lg text-sm {% if message.type == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% elseif message.type == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}"
                          x-data="{ show: true }"
@@ -110,9 +145,61 @@
         {% endif %}
 
         {# Page content #}
-        <div class="px-8 py-6 fade-in">
+        <div class="px-4 md:px-8 py-6 fade-in">
             {% block content %}{% endblock %}
         </div>
     </main>
+
+    {# --- Confirmation Modal --- #}
+    <div
+        x-show="confirmModal.show"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center"
+        @click.self="confirmModal.show = false"
+        x-transition.opacity.duration.200ms
+    >
+        {# Backdrop #}
+        <div class="absolute inset-0 bg-black/50"></div>
+
+        {# Modal #}
+        <div
+            class="relative bg-surface-raised border border-border rounded-xl shadow-2xl max-w-md w-full mx-4"
+            x-trap.inert.noscroll="confirmModal.show"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            {# Header #}
+            <div class="px-6 py-4 border-b border-border-subtle">
+                <h3 class="text-base font-semibold text-text-primary">Confirm Action</h3>
+            </div>
+
+            {# Body #}
+            <div class="px-6 py-5">
+                <p class="text-sm text-text-secondary" x-text="confirmModal.message"></p>
+            </div>
+
+            {# Footer #}
+            <div class="px-6 py-4 border-t border-border-subtle flex items-center justify-end gap-3">
+                <button
+                    type="button"
+                    @click="confirmModal.show = false"
+                    class="inline-flex items-center h-8 px-3 text-[13px] font-medium rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-text-muted transition-colors duration-150"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    @click="document.getElementById(confirmModal.formId).submit(); confirmModal.show = false"
+                    class="inline-flex items-center h-8 px-3 bg-red-600 text-white text-[13px] font-medium rounded-lg hover:bg-red-700 transition-colors duration-150"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -21,15 +21,50 @@ final readonly class UserService
 
     public function create(string $email, string $password, string $role): User
     {
-        $emailAddress = new EmailAddress($email);
-        $userRole = $this->resolveRole($role);
+        $fieldErrors = [];
 
-        $existing = $this->userRepository->findByEmail($emailAddress->getValue());
-        if ($existing instanceof User) {
-            throw new ValidationException('A user with this email already exists');
+        // Validate email
+        try {
+            $emailAddress = new EmailAddress($email);
+        } catch (ValidationException $e) {
+            $fieldErrors = array_merge($fieldErrors, $e->getFieldErrors());
+            $emailAddress = null;
         }
 
-        $hashedPassword = HashedPassword::fromPlaintext($password);
+        // Validate role
+        try {
+            $userRole = $this->resolveRole($role);
+        } catch (ValidationException $e) {
+            $fieldErrors['role'] = $e->getMessage();
+            $userRole = null;
+        }
+
+        // Validate password
+        try {
+            $hashedPassword = HashedPassword::fromPlaintext($password);
+        } catch (ValidationException $e) {
+            $fieldErrors = array_merge($fieldErrors, $e->getFieldErrors());
+            $hashedPassword = null;
+        }
+
+        // Check for duplicate email
+        if ($emailAddress !== null) {
+            $existing = $this->userRepository->findByEmail($emailAddress->getValue());
+            if ($existing instanceof User) {
+                $fieldErrors['email'] = 'A user with this email already exists';
+            }
+        }
+
+        // If there are any validation errors, throw aggregated exception
+        if (count($fieldErrors) > 0) {
+            throw ValidationException::withFieldErrors($fieldErrors);
+        }
+
+        // PHPStan: At this point, validation passed, so all variables are non-null
+        assert($emailAddress instanceof EmailAddress);
+        assert($hashedPassword instanceof HashedPassword);
+        assert($userRole instanceof UserRole);
+
         $now = new DateTimeImmutable();
 
         $user = new User(
@@ -52,21 +87,58 @@ final readonly class UserService
             throw new ValidationException('User not found');
         }
 
+        $fieldErrors = [];
+        $emailAddress = null;
+        $hashedPassword = null;
+        $userRole = null;
+
+        // Validate email
         if ($email !== null) {
-            $emailAddress = new EmailAddress($email);
-            $existing = $this->userRepository->findByEmail($emailAddress->getValue());
-            if ($existing instanceof User && $existing->getId() !== $id) {
-                throw new ValidationException('A user with this email already exists');
+            try {
+                $emailAddress = new EmailAddress($email);
+                $existing = $this->userRepository->findByEmail($emailAddress->getValue());
+                if ($existing instanceof User && $existing->getId() !== $id) {
+                    $fieldErrors['email'] = 'A user with this email already exists';
+                }
+            } catch (ValidationException $e) {
+                $fieldErrors = array_merge($fieldErrors, $e->getFieldErrors());
             }
+        }
+
+        // Validate password
+        if ($password !== null && $password !== '') {
+            try {
+                $hashedPassword = HashedPassword::fromPlaintext($password);
+            } catch (ValidationException $e) {
+                $fieldErrors = array_merge($fieldErrors, $e->getFieldErrors());
+            }
+        }
+
+        // Validate role
+        if ($role !== null) {
+            try {
+                $userRole = $this->resolveRole($role);
+            } catch (ValidationException $e) {
+                $fieldErrors['role'] = $e->getMessage();
+            }
+        }
+
+        // If there are any validation errors, throw aggregated exception
+        if (count($fieldErrors) > 0) {
+            throw ValidationException::withFieldErrors($fieldErrors);
+        }
+
+        // Apply validated changes
+        if ($emailAddress !== null) {
             $user->setEmail($emailAddress);
         }
 
-        if ($password !== null && $password !== '') {
-            $user->setPassword(HashedPassword::fromPlaintext($password));
+        if ($hashedPassword !== null) {
+            $user->setPassword($hashedPassword);
         }
 
-        if ($role !== null) {
-            $user->setRole($this->resolveRole($role));
+        if ($userRole !== null) {
+            $user->setRole($userRole);
         }
 
         $user->setUpdatedAt(new DateTimeImmutable());

@@ -12,13 +12,15 @@ use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use Twig\Environment;
 
 final readonly class Router
 {
     private RouteCollection $routes;
 
-    public function __construct()
-    {
+    public function __construct(
+        private ?Environment $twig = null,
+    ) {
         $this->routes = new RouteCollection();
     }
 
@@ -59,6 +61,12 @@ final readonly class Router
             $parameters = $this->match($request);
             return $controllerResolver($parameters, $request);
         } catch (ResourceNotFoundException) {
+            if ($this->twig instanceof Environment) {
+                $content = $this->twig->render('errors/404.twig');
+
+                return new Response($content, 404);
+            }
+
             return new Response('Not Found', 404);
         } catch (MethodNotAllowedException) {
             return new Response('Method Not Allowed', 405);

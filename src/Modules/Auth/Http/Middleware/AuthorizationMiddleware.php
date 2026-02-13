@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Middleware;
+namespace App\Modules\Auth\Http\Middleware;
 
+use App\Http\Middleware\MiddlewareInterface;
 use App\Http\RouteAccessRegistry;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Domain\Models\User;

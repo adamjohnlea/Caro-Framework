@@ -78,7 +78,12 @@ $container->set(Environment::class, static function () use ($config, $flashMessa
 
     $twig->addGlobal('appName', $config['app']['name']);
     /** @var ?UrlGenerator $urlGenerator */
-    $twig->addExtension(new AppExtension(__DIR__, $flashMessageService, $urlGenerator));
+    $twig->addExtension(new AppExtension(
+        __DIR__,
+        $flashMessageService,
+        $urlGenerator,
+        static fn (): string => $_SESSION['csrf_token'] ?? '',
+    ));
 
     return $twig;
 });
@@ -106,6 +111,14 @@ $container->set(RouteAccessRegistry::class, static fn (): RouteAccessRegistry =>
 // ── Module Service Providers ──────────────────────────────────────────
 
 if ($config['modules']['auth']) {
+    // Harden session cookie security
+    ini_set('session.cookie_httponly', '1'); // Prevent JavaScript access to session cookie
+    ini_set('session.cookie_samesite', 'Strict'); // Prevent CSRF attacks via cookie
+    ini_set('session.use_strict_mode', '1'); // Reject uninitialized session IDs
+    ini_set('session.cookie_secure', $config['app']['env'] === 'production' ? '1' : '0'); // HTTPS-only in production
+    ini_set('session.gc_maxlifetime', '1800'); // 30-minute session lifetime
+    ini_set('session.cookie_lifetime', '0'); // Session cookie expires when browser closes
+
     session_start();
     $container->registerProvider(new AuthServiceProvider($container, $config));
 }
@@ -133,7 +146,9 @@ foreach ($container->getProviders() as $provider) {
 
 // ── Routes ───────────────────────────────────────────────────────────
 
-$router = new Router();
+/** @var Environment $twig */
+$twig = $container->get(Environment::class);
+$router = new Router($twig);
 
 // Core routes
 $router->get('/', HomeController::class, 'index', 'home');
@@ -157,7 +172,7 @@ $container->boot();
 // ── Middleware ────────────────────────────────────────────────────────
 
 $pipeline = new MiddlewarePipeline();
-$pipeline->add(new SecurityHeadersMiddleware());
+$pipeline->add(new SecurityHeadersMiddleware($config));
 
 // Load module middleware from providers
 foreach ($container->getProviders() as $provider) {

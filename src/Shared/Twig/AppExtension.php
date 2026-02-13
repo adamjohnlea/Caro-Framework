@@ -11,10 +11,14 @@ use Twig\TwigFunction;
 
 final class AppExtension extends AbstractExtension
 {
+    /**
+     * @param callable(): string|null $csrfTokenProvider
+     */
     public function __construct(
         private readonly string $publicPath,
         private readonly ?FlashMessageService $flashMessageService = null,
         private readonly ?UrlGeneratorInterface $urlGenerator = null,
+        private $csrfTokenProvider = null,
     ) {
     }
 
@@ -26,6 +30,9 @@ final class AppExtension extends AbstractExtension
             new TwigFunction('asset', $this->asset(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...)),
             new TwigFunction('has_flash', $this->hasFlash(...)),
+            new TwigFunction('get_flash_type', $this->getFlashType(...)),
+            new TwigFunction('get_flash_message', $this->getFlashMessage(...)),
+            new TwigFunction('csrf_token', $this->csrfToken(...)),
             new TwigFunction('path', $this->path(...)),
         ];
     }
@@ -60,6 +67,49 @@ final class AppExtension extends AbstractExtension
         }
 
         return $this->flashMessageService->has();
+    }
+
+    public function getFlashType(): string
+    {
+        if (!$this->flashMessageService instanceof FlashMessageService) {
+            return '';
+        }
+
+        /** @var array<string, mixed> $_SESSION */
+        if (!isset($_SESSION['_flash_messages']) || !is_array($_SESSION['_flash_messages']) || $_SESSION['_flash_messages'] === []) {
+            return '';
+        }
+
+        /** @var array{type: string, message: string} $firstMessage */
+        $firstMessage = $_SESSION['_flash_messages'][0];
+
+        return $firstMessage['type'];
+    }
+
+    public function getFlashMessage(): string
+    {
+        if (!$this->flashMessageService instanceof FlashMessageService) {
+            return '';
+        }
+
+        /** @var array<string, mixed> $_SESSION */
+        if (!isset($_SESSION['_flash_messages']) || !is_array($_SESSION['_flash_messages']) || $_SESSION['_flash_messages'] === []) {
+            return '';
+        }
+
+        /** @var array{type: string, message: string} $firstMessage */
+        $firstMessage = $_SESSION['_flash_messages'][0];
+
+        return $firstMessage['message'];
+    }
+
+    public function csrfToken(): string
+    {
+        if ($this->csrfTokenProvider === null) {
+            return '';
+        }
+
+        return ($this->csrfTokenProvider)();
     }
 
     /**

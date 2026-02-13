@@ -118,14 +118,7 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function count(): int
     {
-        $rows = $this->database->table('users')
-            ->select(['COUNT(*) as count'])
-            ->get();
-
-        /** @var array{count: string|int} $row */
-        $row = $rows[0];
-
-        return (int) $row['count'];
+        return $this->database->table('users')->count();
     }
 
     /**

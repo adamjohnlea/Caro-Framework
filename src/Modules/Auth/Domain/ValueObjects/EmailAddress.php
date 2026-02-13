@@ -16,11 +16,11 @@ final readonly class EmailAddress implements Stringable
         $email = strtolower(trim($email));
 
         if ($email === '') {
-            throw new ValidationException('Email cannot be empty');
+            throw ValidationException::withFieldError('email', 'Email cannot be empty');
         }
 
         if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new ValidationException('Invalid email format');
+            throw ValidationException::withFieldError('email', 'Invalid email format');
         }
 
         $this->value = $email;

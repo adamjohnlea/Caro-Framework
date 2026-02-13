@@ -7,8 +7,16 @@ namespace App\Http\Middleware;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class SecurityHeadersMiddleware implements MiddlewareInterface
+final readonly class SecurityHeadersMiddleware implements MiddlewareInterface
 {
+    /**
+     * @param array<string, mixed> $config
+     */
+    public function __construct(
+        private array $config,
+    ) {
+    }
+
     public function handle(Request $request, callable $next): Response
     {
         $response = $next($request);
@@ -25,6 +33,16 @@ final class SecurityHeadersMiddleware implements MiddlewareInterface
             'Permissions-Policy',
             'camera=(), microphone=(), geolocation=()',
         );
+
+        // HSTS header for production environments
+        /** @var array{env?: string} $appConfig */
+        $appConfig = $this->config['app'] ?? [];
+        if (($appConfig['env'] ?? 'development') === 'production') {
+            $response->headers->set(
+                'Strict-Transport-Security',
+                'max-age=31536000; includeSubDomains; preload',
+            );
+        }
 
         return $response;
     }

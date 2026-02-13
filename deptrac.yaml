@@ -41,6 +41,11 @@ deptrac:
         - type: directory
           value: src/Views/.*
 
+    - name: ServiceProvider
+      collectors:
+        - type: classNameRegex
+          value: '/^App\\Modules\\.*ServiceProvider$/'
+
   ruleset:
     # Domain layer has NO dependencies on other layers (only Shared)
     Domain:
@@ -66,10 +71,21 @@ deptrac:
       - Database
 
     # Shared can depend on Database (QueryBuilder wraps Database)
+    # CliBootstrap needs ServiceProviders for bootstrapping
     Shared:
       - Database
+      - ServiceProvider
 
     # Database is infrastructure-level, depends on Shared only
     Database:
       - Shared
+
+    # ServiceProviders wire everything together, can depend on all layers
+    ServiceProvider:
+      - Domain
+      - Application
+      - Infrastructure
+      - Http
+      - Shared
+      - Database
 

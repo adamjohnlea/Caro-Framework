@@ -21,9 +21,14 @@ final class HashedPasswordTest extends TestCase
     public function test_from_plaintext_throws_for_short_password(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Password must be at least 8 characters');
 
-        HashedPassword::fromPlaintext('short');
+        try {
+            HashedPassword::fromPlaintext('short');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasFieldError('password'));
+            $this->assertSame('Password must be at least 8 characters', $e->getFieldError('password'));
+            throw $e;
+        }
     }
 
     public function test_from_plaintext_accepts_exactly_8_characters(): void

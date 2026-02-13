@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Middleware;
+namespace App\Modules\Auth\Http\Middleware;
 
+use App\Http\Middleware\MiddlewareInterface;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use Override;
 use Symfony\Component\HttpFoundation\Request;

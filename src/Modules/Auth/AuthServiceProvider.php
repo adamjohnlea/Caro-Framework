@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Auth;
 
 use App\Database\Database;
-use App\Http\Middleware\AuthenticationMiddleware;
-use App\Http\Middleware\AuthorizationMiddleware;
-use App\Http\Middleware\CsrfMiddleware;
 use App\Http\Middleware\MiddlewareInterface;
 use App\Http\MiddlewareProviderInterface;
 use App\Http\RouteAccessProviderInterface;
@@ -20,6 +17,9 @@ use App\Modules\Auth\Application\Services\UserService;
 use App\Modules\Auth\Domain\Repositories\UserRepositoryInterface;
 use App\Modules\Auth\Http\Controllers\AuthController;
 use App\Modules\Auth\Http\Controllers\UserController;
+use App\Modules\Auth\Http\Middleware\AuthenticationMiddleware;
+use App\Modules\Auth\Http\Middleware\AuthorizationMiddleware;
+use App\Modules\Auth\Http\Middleware\CsrfMiddleware;
 use App\Modules\Auth\Infrastructure\Repositories\SqliteUserRepository;
 use App\Shared\Providers\ServiceProvider;
 use App\Shared\Session\FlashMessageService;
@@ -100,7 +100,7 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
     {
         $router->get('/login', AuthController::class, 'showLogin', 'login');
         $router->post('/login', AuthController::class, 'login', 'login.post');
-        $router->get('/logout', AuthController::class, 'logout', 'logout');
+        $router->post('/logout', AuthController::class, 'logout', 'logout');
 
         $router->get('/users', UserController::class, 'index', 'users.index');
         $router->get('/users/create', UserController::class, 'create', 'users.create');

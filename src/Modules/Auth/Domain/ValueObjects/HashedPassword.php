@@ -15,7 +15,7 @@ final readonly class HashedPassword
     public static function fromPlaintext(string $password): self
     {
         if (strlen($password) < 8) {
-            throw new ValidationException('Password must be at least 8 characters');
+            throw ValidationException::withFieldError('password', 'Password must be at least 8 characters');
         }
 
         $hash = password_hash($password, PASSWORD_DEFAULT);

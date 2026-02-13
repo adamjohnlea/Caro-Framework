@@ -34,33 +34,53 @@ final class EmailAddressTest extends TestCase
     public function test_throws_exception_for_empty_string(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Email cannot be empty');
 
-        new EmailAddress('');
+        try {
+            new EmailAddress('');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasFieldError('email'));
+            $this->assertSame('Email cannot be empty', $e->getFieldError('email'));
+            throw $e;
+        }
     }
 
     public function test_throws_exception_for_whitespace_only(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Email cannot be empty');
 
-        new EmailAddress('   ');
+        try {
+            new EmailAddress('   ');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasFieldError('email'));
+            $this->assertSame('Email cannot be empty', $e->getFieldError('email'));
+            throw $e;
+        }
     }
 
     public function test_throws_exception_for_invalid_email(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Invalid email format');
 
-        new EmailAddress('not-an-email');
+        try {
+            new EmailAddress('not-an-email');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasFieldError('email'));
+            $this->assertSame('Invalid email format', $e->getFieldError('email'));
+            throw $e;
+        }
     }
 
     public function test_throws_exception_for_email_without_domain(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Invalid email format');
 
-        new EmailAddress('user@');
+        try {
+            new EmailAddress('user@');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasFieldError('email'));
+            $this->assertSame('Invalid email format', $e->getFieldError('email'));
+            throw $e;
+        }
     }
 
     public function test_equals_returns_true_for_same_email(): void

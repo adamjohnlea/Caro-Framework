@@ -16,7 +16,7 @@ src/
   Database/           # Database wrapper, migration runner, SQL migrations, Grammar
   Http/
     Controllers/      # Core HTTP controllers (Home, Health — thin, delegate to services)
-    Middleware/        # Request/response middleware pipeline
+    Middleware/        # Core middleware (SecurityHeaders, Pipeline) — Auth middleware in Auth module
     ControllerDispatcher.php   # Reflection-based controller dispatch
     UrlGenerator.php           # Named route URL generation
     RouteProviderInterface.php       # Module route self-registration
@@ -28,6 +28,7 @@ src/
       AuthServiceProvider.php  # Register Auth services, routes, middleware
       Http/
         Controllers/  # Auth and User controllers
+        Middleware/   # Auth middleware (Authentication, Authorization, CSRF)
     Email/            # Email service (SES + Log fallback)
       EmailServiceProvider.php # Register Email services
     Queue/            # Database-backed job queue with worker
@@ -45,6 +46,7 @@ src/
         Migrations/   # Module-specific SQL migrations (timestamp-named)
       Http/
         Controllers/  # Module HTTP controllers
+        Middleware/   # Module-specific middleware (optional)
       {ModuleName}ServiceProvider.php  # Service, route, and middleware registration
   Shared/
     Cli/              # CliBootstrap for CLI tool container setup
@@ -76,7 +78,8 @@ tests/
 - **Application** depends on Domain and Shared only
 - **Infrastructure** can depend on Domain, Application, Shared, Database
 - **Http** depends on Application, Domain, Shared, Database
-- **Shared** can depend on Database (QueryBuilder wraps Database)
+- **Shared** can depend on Database and ServiceProvider (for bootstrapping)
+- **ServiceProvider** can depend on all layers (wires everything together)
 
 ## Modules
 
@@ -84,12 +87,15 @@ All modules are opt-in via `.env` config flags.
 
 ### Auth Module (`MODULE_AUTH=true`)
 - Session-based authentication with login/logout
+- **Security:** Session fixation protection, cookie hardening (httponly, secure, samesite), 30-min timeout
 - User CRUD (admin-only) with role-based access
-- CSRF protection on POST requests
+- **Validation:** Per-field error messages with field-specific styling
+- CSRF protection on POST requests (logout uses POST, not GET)
 - Flash messages on login, logout, and all CRUD operations
-- Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware`
+- Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware` (in `src/Modules/Auth/Http/Middleware/`)
 - Self-registers routes, middleware, and route access via provider interfaces
 - Controllers live in `src/Modules/Auth/Http/Controllers/`
+- **Tests:** Comprehensive test coverage (55 tests) including feature tests for auth flows
 - CLI: `php cli/create-admin.php --email=admin@example.com --password=secret123`
 
 ### Email Module (`MODULE_EMAIL=true`)

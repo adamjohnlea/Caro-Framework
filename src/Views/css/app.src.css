@@ -70,7 +70,7 @@
 
 @layer components {
     .sidebar-transition {
-        transition: width 0.2s ease, padding 0.2s ease;
+        transition: width 0.2s ease, padding 0.2s ease, transform 0.2s ease;
     }
 
     .content-transition {
@@ -84,5 +84,14 @@
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(4px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 767px) {
+        .sidebar-transition {
+            transition: transform 0.2s ease;
+        }
+        .content-transition {
+            transition: none;
+        }
     }
 }

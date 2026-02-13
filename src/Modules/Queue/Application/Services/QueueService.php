@@ -62,9 +62,20 @@ final readonly class QueueService
             return true;
         }
 
+        // Validate job class implements JobInterface BEFORE unserializing
+        if (!is_subclass_of($jobClass, JobInterface::class)) {
+            $job->setStatus('failed');
+            $job->setErrorMessage('Job class does not implement JobInterface: ' . $jobClass);
+            $this->queueRepository->update($job);
+            $this->logger->error('Queue job class does not implement JobInterface: ' . $jobClass);
+
+            return true;
+        }
+
         try {
             $payload = $job->getPayload();
-            $jobInstance = unserialize($payload, ['allowed_classes' => true]);
+            // Only allow unserializing the specific job class (prevents object injection attacks)
+            $jobInstance = unserialize($payload, ['allowed_classes' => [$jobClass]]);
 
             if (!$jobInstance instanceof JobInterface) {
                 throw new RuntimeException('Deserialized job is not an instance of JobInterface');

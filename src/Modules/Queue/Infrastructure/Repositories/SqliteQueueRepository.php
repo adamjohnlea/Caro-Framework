@@ -117,15 +117,9 @@ final readonly class SqliteQueueRepository implements QueueRepositoryInterface
     #[Override]
     public function countByStatus(string $status): int
     {
-        $rows = $this->database->table('jobs')
-            ->select(['COUNT(*) as count'])
+        return $this->database->table('jobs')
             ->where('status', $status, '=')
-            ->get();
-
-        /** @var array{count: string|int} $row */
-        $row = $rows[0];
-
-        return (int) $row['count'];
+            ->count();
     }
 
     #[Override]

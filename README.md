@@ -15,17 +15,19 @@ A modern, modular PHP framework built with Domain-Driven Design principles, feat
 - **Modern PHP 8.4** with strict types and readonly classes
 - **Modular architecture** - enable only the features you need
 - **Domain-Driven Design** with clean layer separation enforced by deptrac
-- **SQLite-first** with fluent query builder
+- **SQLite-first** with fluent query builder and SQL injection protection
 - **PSR-11 container** with self-registering module providers
-- **Session-based authentication** with CSRF protection
+- **Secure authentication** - Session fixation protection, cookie hardening (httponly, secure, samesite), CSRF on all POST requests
 - **Flash messages** across redirects with auto-dismiss
+- **Per-field validation errors** with visual feedback
 - **Named route URL generation** via `path()` Twig function and `UrlGenerator`
 - **Event dispatcher** for decoupled cross-module communication
 - **Email service** with AWS SES support and log fallback
-- **Background job queue** with database-backed persistence
+- **Background job queue** with database-backed persistence and safe deserialization
 - **Reflection-based controller dispatch** with automatic parameter injection
-- **Test-Driven Development** with PHPUnit 11.x
-- **Strict quality checks** - PHPStan level 10, PHP-CS-Fixer, Rector
+- **Comprehensive test coverage** - 233 tests with unit, integration, and feature tests
+- **Strict quality checks** - PHPStan level 10, PHP-CS-Fixer, Rector, 0 violations
+- **Responsive design** - Mobile-friendly with collapsible sidebar and hamburger menu
 - **Modern frontend** with Tailwind CSS 4 and Alpine.js
 
 ## Requirements
@@ -162,13 +164,15 @@ All modules are opt-in via `.env` configuration flags.
 
 **Enable:** `MODULE_AUTH=true`
 
-Provides session-based authentication with role-based access control:
+Provides secure session-based authentication with role-based access control:
 
-- Login/logout functionality with flash messages
-- User CRUD operations (admin-only) with flash messages
-- CSRF protection on POST/PUT/DELETE requests
-- Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware`
+- **Security hardened:** Session fixation protection, cookie hardening (httponly, secure, samesite=Strict), 30-minute timeout
+- Login/logout functionality (POST-based logout with CSRF)
+- User CRUD operations (admin-only) with per-field validation errors
+- CSRF protection on all POST requests
+- Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware` (in `src/Modules/Auth/Http/Middleware/`)
 - Self-registers routes, middleware, and route access via provider interfaces
+- **Comprehensive tests:** 55 tests including feature tests for complete auth flows
 
 **Create an admin user:**
 

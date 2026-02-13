@@ -43,9 +43,22 @@ final readonly class MigrationRunner
                 continue;
             }
 
+            $this->runMigration($filename, $sql);
+            $this->logger->info('Migration applied: ' . $filename);
+        }
+    }
+
+    private function runMigration(string $filename, string $sql): void
+    {
+        $this->database->beginTransaction();
+
+        try {
             $this->database->exec($sql);
             $this->recordMigration($filename);
-            $this->logger->info('Migration applied: ' . $filename);
+            $this->database->commit();
+        } catch (\Throwable $e) {
+            $this->database->rollBack();
+            throw $e;
         }
     }
 

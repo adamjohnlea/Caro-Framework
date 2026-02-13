@@ -26,6 +26,12 @@
             <directory>src/Database/Migrations</directory>
         </exclude>
     </source>
+    <coverage>
+        <report>
+            <html outputDirectory=".phpunit.cache/coverage-html"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
+    </coverage>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="DB_PATH" value=":memory:"/>

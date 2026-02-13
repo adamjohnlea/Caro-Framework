@@ -62,6 +62,7 @@ final readonly class UserController
         } catch (ValidationException $e) {
             $html = $this->twig->render('users/create.twig', [
                 'error' => $e->getMessage(),
+                'fieldErrors' => $e->getFieldErrors(),
                 'roles' => UserRole::cases(),
                 'old' => $request->request->all(),
             ]);
@@ -110,6 +111,7 @@ final readonly class UserController
 
             $html = $this->twig->render('users/edit.twig', [
                 'error' => $e->getMessage(),
+                'fieldErrors' => $e->getFieldErrors(),
                 'user' => $user,
                 'roles' => UserRole::cases(),
             ]);
