@@ -57,10 +57,12 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
             $authService = $this->container->get(AuthenticationService::class);
             /** @var Environment $twig */
             $twig = $this->container->get(Environment::class);
+            /** @var FlashMessageService $flashMessageService */
+            $flashMessageService = $this->container->get(FlashMessageService::class);
             /** @var UrlGenerator $urlGenerator */
             $urlGenerator = $this->container->get(UrlGenerator::class);
 
-            return new AuthController($authService, $twig, $urlGenerator);
+            return new AuthController($authService, $twig, $flashMessageService, $urlGenerator);
         });
 
         $this->container->set(UserController::class, function (): UserController {

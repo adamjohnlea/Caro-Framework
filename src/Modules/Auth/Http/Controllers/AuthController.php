@@ -7,6 +7,7 @@ namespace App\Modules\Auth\Http\Controllers;
 use App\Http\UrlGenerator;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Domain\Models\User;
+use App\Shared\Session\FlashMessageService;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +18,7 @@ final readonly class AuthController
     public function __construct(
         private AuthenticationService $authService,
         private Environment $twig,
+        private FlashMessageService $flashMessageService,
         private UrlGenerator $urlGenerator,
     ) {
     }
@@ -57,12 +59,16 @@ final readonly class AuthController
             return new Response($html, 422);
         }
 
+        $this->flashMessageService->flash('success', 'You have been logged in.');
+
         return new RedirectResponse($this->urlGenerator->generate('home'));
     }
 
     public function logout(): RedirectResponse
     {
         $this->authService->logout();
+
+        $this->flashMessageService->flash('success', 'You have been logged out.');
 
         return new RedirectResponse($this->urlGenerator->generate('login'));
     }
