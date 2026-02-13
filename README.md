@@ -30,7 +30,7 @@ A modern, modular PHP framework built with Domain-Driven Design principles, feat
 
 ```bash
 git clone <repository-url> your-project-name
-cd caro-framework
+cd your-project-name
 composer install
 npm install
 ```
