@@ -65,7 +65,7 @@ First, you need to copy the Caro Framework to your computer.
 cd ~/Projects
 
 # Clone the framework
-git clone https://github.com/your-repo/caro-framework.git my-awesome-project
+git clone https://github.com/adamjohnlea/Caro-Framework.git my-awesome-project
 
 # Go into your new project folder
 cd my-awesome-project
@@ -232,7 +232,7 @@ APP_NAME="My App"                # Your website's name
 
 # Database settings
 DB_DRIVER=sqlite                 # Type of database (SQLite is easiest)
-DB_PATH=storage/database.sqlite  # Where to store your database file
+# DB_PATH=storage/database.sqlite  # Optional: defaults to storage/database.sqlite
 ```
 
 **What to change:**
@@ -318,7 +318,7 @@ Let's add a simple contact page to your website.
 Create a new file: `src/Views/contact.twig`
 
 ```twig
-{% extends 'layouts/app.twig' %}
+{% extends 'layouts/base.twig' %}
 
 {% block title %}Contact Us{% endblock %}
 

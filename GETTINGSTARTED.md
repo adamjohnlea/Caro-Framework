@@ -10,14 +10,11 @@
 ## Quick Setup
 
 ```bash
-# 1. Copy this scaffold to your new project directory
-cp -r scaffold/ /path/to/my-new-project
-cd /path/to/my-new-project
+# 1. Clone the framework to your new project directory
+git clone https://github.com/adamjohnlea/Caro-Framework.git my-new-project
+cd my-new-project
 
-# 2. Initialize git
-git init
-
-# 3. Install dependencies and set up git hooks
+# 2. Install dependencies and set up git hooks
 composer setup
 npm install
 
@@ -96,13 +93,17 @@ php cli/worker.php --queue=default --sleep=3
 Create a job by implementing `JobInterface`:
 
 ```php
+use App\Shared\Container\Container;
+
 final readonly class SendWelcomeEmailJob implements JobInterface
 {
     public function __construct(private int $userId) {}
 
     #[Override]
-    public function handle(): void
+    public function handle(Container $container): void
     {
+        // Jobs receive the container to access services
+        $emailService = $container->get(EmailServiceInterface::class);
         // Send the email...
     }
 

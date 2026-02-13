@@ -35,7 +35,7 @@ A modern, modular PHP framework built with Domain-Driven Design principles, feat
 ### 1. Clone and install dependencies
 
 ```bash
-git clone <repository-url> your-project-name
+git clone https://github.com/adamjohnlea/Caro-Framework.git your-project-name
 cd your-project-name
 composer install
 npm install
@@ -85,6 +85,9 @@ MODULE_QUEUE=false
 ```bash
 npm run build       # One-time build
 npm run dev         # Watch mode for development
+
+# Copy Alpine.js (required for interactivity)
+cp node_modules/alpinejs/dist/cdn.min.js public/js/alpine.min.js
 ```
 
 Migrations run automatically on the first web request.
