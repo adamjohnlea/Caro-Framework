@@ -8,6 +8,12 @@ use Psr\Log\LoggerInterface;
 
 final readonly class MigrationRunner
 {
+    /** @var array<string, string> Old filename => New filename */
+    private const array MIGRATION_RENAMES = [
+        '001_create_users_table.sql' => '2025_01_01_000001_create_users_table.sql',
+        '002_create_jobs_table.sql' => '2025_01_01_000002_create_jobs_table.sql',
+    ];
+
     public function __construct(
         private Database $database,
         private LoggerInterface $logger,
@@ -20,6 +26,7 @@ final readonly class MigrationRunner
     public function run(array $enabledModules = []): void
     {
         $this->createMigrationsTable();
+        $this->updateRenamedMigrations();
 
         $files = $this->collectMigrationFiles($enabledModules);
         sort($files);
@@ -92,6 +99,19 @@ final readonly class MigrationRunner
                 ran_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             )',
         );
+    }
+
+    private function updateRenamedMigrations(): void
+    {
+        foreach (self::MIGRATION_RENAMES as $oldName => $newName) {
+            if ($this->hasRun($oldName)) {
+                $this->database->query(
+                    'UPDATE migrations SET filename = ? WHERE filename = ?',
+                    [$newName, $oldName],
+                );
+                $this->logger->info('Migration renamed: ' . $oldName . ' → ' . $newName);
+            }
+        }
     }
 
     private function hasRun(string $filename): bool
