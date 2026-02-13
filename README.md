@@ -49,7 +49,16 @@ composer hooks:install
 
 This installs the pre-commit hook that enforces code quality checks.
 
-### 3. Configure environment
+### 3. Create database file
+
+```bash
+touch storage/database.sqlite
+chmod -R 775 storage
+```
+
+The database file is git-ignored, so you need to create it after cloning.
+
+### 4. Configure environment
 
 ```bash
 cp .env.example .env
@@ -71,24 +80,14 @@ MODULE_EMAIL=false
 MODULE_QUEUE=false
 ```
 
-### 4. Initialize the database
-
-```bash
-# Create storage directory if needed
-mkdir -p storage
-
-# Run migrations
-php public/index.php
-```
-
-The first request will automatically run migrations.
-
 ### 5. Build frontend assets
 
 ```bash
 npm run build       # One-time build
 npm run dev         # Watch mode for development
 ```
+
+Migrations run automatically on the first web request.
 
 ### 6. Create an admin user (if using Auth module)
 

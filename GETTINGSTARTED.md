@@ -24,16 +24,20 @@ npm install
 # 4. Create your environment file
 cp .env.example .env
 
-# 5. Build the CSS
+# 5. Create the database file (git-ignored, so not cloned)
+touch storage/database.sqlite
+chmod -R 775 storage
+
+# 6. Build the CSS
 npm run build
 
-# 6. Copy Alpine.js to public directory
+# 7. Copy Alpine.js to public directory
 cp node_modules/alpinejs/dist/cdn.min.js public/js/alpine.min.js
 
-# 7. Create your first admin user (auth module is enabled by default)
+# 8. Create your first admin user (auth module is enabled by default)
 php cli/create-admin.php --email=admin@example.com --password=secret123
 
-# 8. Verify everything works
+# 9. Verify everything works
 composer quality
 php cli/doctor.php
 ```

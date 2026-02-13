@@ -113,6 +113,20 @@ cp .env.example .env
 
 **What just happened?** You created a `.env` file - this is where you'll store all your project's settings (like passwords, which features to turn on, etc.)
 
+### Step 3.5: Create the Database File
+
+```bash
+# Create the database file
+touch storage/database.sqlite
+
+# Make sure the storage directory is writable
+chmod -R 775 storage
+```
+
+**What just happened?** You created an empty SQLite database file. The framework will automatically create the tables it needs when you first visit the website.
+
+**Why is this needed?** The database file is ignored by git (for security), so it doesn't get cloned with the project. You need to create it manually.
+
 ### Step 4: Build Your Styles
 
 ```bash
