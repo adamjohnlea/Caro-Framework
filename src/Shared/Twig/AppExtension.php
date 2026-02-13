@@ -14,6 +14,7 @@ final class AppExtension extends AbstractExtension
     public function __construct(
         private readonly string $publicPath,
         private readonly ?FlashMessageService $flashMessageService = null,
+        private readonly ?UrlGeneratorInterface $urlGenerator = null,
     ) {
     }
 
@@ -25,6 +26,7 @@ final class AppExtension extends AbstractExtension
             new TwigFunction('asset', $this->asset(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...)),
             new TwigFunction('has_flash', $this->hasFlash(...)),
+            new TwigFunction('path', $this->path(...)),
         ];
     }
 
@@ -58,5 +60,17 @@ final class AppExtension extends AbstractExtension
         }
 
         return $this->flashMessageService->has();
+    }
+
+    /**
+     * @param array<string, int|string> $params
+     */
+    public function path(string $name, array $params = []): string
+    {
+        if (!$this->urlGenerator instanceof UrlGeneratorInterface) {
+            return '/';
+        }
+
+        return $this->urlGenerator->generate($name, $params);
     }
 }

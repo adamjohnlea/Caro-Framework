@@ -14,6 +14,7 @@ use App\Http\RouteAccessProviderInterface;
 use App\Http\RouteAccessRegistry;
 use App\Http\RouteProviderInterface;
 use App\Http\Router;
+use App\Http\UrlGenerator;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Application\Services\UserService;
 use App\Modules\Auth\Domain\Repositories\UserRepositoryInterface;
@@ -56,8 +57,10 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
             $authService = $this->container->get(AuthenticationService::class);
             /** @var Environment $twig */
             $twig = $this->container->get(Environment::class);
+            /** @var UrlGenerator $urlGenerator */
+            $urlGenerator = $this->container->get(UrlGenerator::class);
 
-            return new AuthController($authService, $twig);
+            return new AuthController($authService, $twig, $urlGenerator);
         });
 
         $this->container->set(UserController::class, function (): UserController {
@@ -69,8 +72,10 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
             $twig = $this->container->get(Environment::class);
             /** @var FlashMessageService $flashMessageService */
             $flashMessageService = $this->container->get(FlashMessageService::class);
+            /** @var UrlGenerator $urlGenerator */
+            $urlGenerator = $this->container->get(UrlGenerator::class);
 
-            return new UserController($userService, $authService, $twig, $flashMessageService);
+            return new UserController($userService, $authService, $twig, $flashMessageService, $urlGenerator);
         });
     }
 

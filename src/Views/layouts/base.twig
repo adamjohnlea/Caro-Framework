@@ -21,7 +21,7 @@
     >
         {# Logo #}
         <div class="flex items-center h-14 border-b border-sidebar-border" :class="sidebarOpen ? 'px-5' : 'px-0 justify-center'">
-            <a href="/" class="flex items-center gap-3 min-w-0">
+            <a href="{{ path('home') }}" class="flex items-center gap-3 min-w-0">
                 <svg class="shrink-0 w-6 h-6 text-sidebar-text-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                 <span class="text-sm font-semibold text-sidebar-text-active whitespace-nowrap" x-show="sidebarOpen" x-cloak x-transition.opacity.duration.150ms>{{ appName }}</span>
             </a>
@@ -29,10 +29,10 @@
 
         {# Navigation #}
         <nav class="flex-1 py-4 space-y-1" :class="sidebarOpen ? 'px-3' : 'px-2'">
-            {% set nav_items = [{url: '/', label: 'Dashboard', icon: 'dashboard'}] %}
+            {% set nav_items = [{url: path('home'), label: 'Dashboard', icon: 'dashboard'}] %}
 
             {% if authEnabled is defined and authEnabled %}
-                {% set nav_items = nav_items|merge([{url: '/users', label: 'Users', icon: 'users'}]) %}
+                {% set nav_items = nav_items|merge([{url: path('users.index'), label: 'Users', icon: 'users'}]) %}
             {% endif %}
 
             {% for item in nav_items %}
@@ -58,7 +58,7 @@
                 <span class="shrink-0 flex items-center justify-center w-[18px] h-[18px] rounded-full bg-sidebar-hover text-[10px] font-bold text-sidebar-text-active">{{ currentUser.email.value|first|upper }}</span>
                 <span class="text-[12px] text-sidebar-text truncate" x-show="sidebarOpen" x-cloak x-transition.opacity.duration.150ms>{{ currentUser.email.value }}</span>
             </div>
-            <a href="/logout"
+            <a href="{{ path('logout') }}"
                class="flex items-center gap-3 w-full rounded-lg text-[13px] font-medium text-sidebar-text hover:text-sidebar-text-active hover:bg-sidebar-hover transition-colors duration-150 mb-2"
                :class="sidebarOpen ? 'px-3 py-2' : 'px-0 py-2 justify-center'"
             >

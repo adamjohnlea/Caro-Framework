@@ -22,6 +22,7 @@ use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Email\EmailServiceProvider;
 use App\Modules\Queue\QueueServiceProvider;
 use App\Shared\Container\Container;
+use App\Http\UrlGenerator;
 use App\Shared\Events\EventDispatcher;
 use App\Shared\Events\EventDispatcherInterface;
 use App\Shared\Session\FlashMessageService;
@@ -63,7 +64,9 @@ $container->set(Database::class, static function () use ($config, $container): D
     return $database;
 });
 
-$container->set(Environment::class, static function () use ($config, $flashMessageService): Environment {
+$urlGenerator = null;
+
+$container->set(Environment::class, static function () use ($config, $flashMessageService, &$urlGenerator): Environment {
     $loader = new FilesystemLoader(__DIR__ . '/../src/Views');
     $twig = new Environment($loader, [
         'strict_variables' => true,
@@ -71,7 +74,8 @@ $container->set(Environment::class, static function () use ($config, $flashMessa
     ]);
 
     $twig->addGlobal('appName', $config['app']['name']);
-    $twig->addExtension(new AppExtension(__DIR__, $flashMessageService));
+    /** @var ?UrlGenerator $urlGenerator */
+    $twig->addExtension(new AppExtension(__DIR__, $flashMessageService, $urlGenerator));
 
     return $twig;
 });
@@ -144,6 +148,11 @@ foreach ($container->getProviders() as $provider) {
         $provider->routes($router);
     }
 }
+
+// ── URL Generator ────────────────────────────────────────────────────
+
+$urlGenerator = new UrlGenerator($router->getRoutes());
+$container->set(UrlGenerator::class, static fn (): UrlGenerator => $urlGenerator);
 
 // ── Middleware ────────────────────────────────────────────────────────
 

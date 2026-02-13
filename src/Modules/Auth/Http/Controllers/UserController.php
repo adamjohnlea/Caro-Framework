@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth\Http\Controllers;
 
+use App\Http\UrlGenerator;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Application\Services\UserService;
 use App\Modules\Auth\Domain\Models\User;
@@ -22,6 +23,7 @@ final readonly class UserController
         private AuthenticationService $authService,
         private Environment $twig,
         private FlashMessageService $flashMessageService,
+        private UrlGenerator $urlGenerator,
     ) {
     }
 
@@ -56,7 +58,7 @@ final readonly class UserController
 
             $this->flashMessageService->flash('success', 'User created successfully.');
 
-            return new RedirectResponse('/users');
+            return new RedirectResponse($this->urlGenerator->generate('users.index'));
         } catch (ValidationException $e) {
             $html = $this->twig->render('users/create.twig', [
                 'error' => $e->getMessage(),
@@ -98,7 +100,7 @@ final readonly class UserController
 
             $this->flashMessageService->flash('success', 'User updated successfully.');
 
-            return new RedirectResponse('/users');
+            return new RedirectResponse($this->urlGenerator->generate('users.index'));
         } catch (ValidationException $e) {
             $user = $this->userService->findById($id);
 
@@ -129,7 +131,7 @@ final readonly class UserController
 
             $this->flashMessageService->flash('success', 'User deleted successfully.');
 
-            return new RedirectResponse('/users');
+            return new RedirectResponse($this->urlGenerator->generate('users.index'));
         } catch (ValidationException) {
             return new Response('Not Found', 404);
         }
