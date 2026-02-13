@@ -16,9 +16,14 @@ A modern, modular PHP framework built with Domain-Driven Design principles, feat
 - **Modular architecture** - enable only the features you need
 - **Domain-Driven Design** with clean layer separation enforced by deptrac
 - **SQLite-first** with fluent query builder
+- **PSR-11 container** with self-registering module providers
 - **Session-based authentication** with CSRF protection
+- **Flash messages** across redirects with auto-dismiss
+- **Named route URL generation** via `path()` Twig function and `UrlGenerator`
+- **Event dispatcher** for decoupled cross-module communication
 - **Email service** with AWS SES support and log fallback
 - **Background job queue** with database-backed persistence
+- **Reflection-based controller dispatch** with automatic parameter injection
 - **Test-Driven Development** with PHPUnit 11.x
 - **Strict quality checks** - PHPStan level 10, PHP-CS-Fixer, Rector
 - **Modern frontend** with Tailwind CSS 4 and Alpine.js
@@ -106,12 +111,17 @@ Caro Framework uses a modular, domain-driven architecture with strict layer boun
 src/
 ├── Database/              # Database wrapper, migrations, query grammar
 ├── Http/
-│   ├── Controllers/       # Thin HTTP controllers
-│   └── Middleware/        # Request/response middleware
+│   ├── Controllers/       # Core HTTP controllers (Home, Health)
+│   ├── Middleware/         # Request/response middleware
+│   ├── ControllerDispatcher.php   # Reflection-based dispatch
+│   ├── UrlGenerator.php           # Named route URL generation
+│   ├── RouteProviderInterface.php       # Module route self-registration
+│   ├── MiddlewareProviderInterface.php  # Module middleware self-registration
+│   └── RouteAccessRegistry.php          # Public/admin route registry
 ├── Modules/
 │   ├── Auth/              # Authentication module
-│   │   ├── AuthServiceProvider.php  # Service registration
-│   │   └── routes.php               # Module routes
+│   │   ├── AuthServiceProvider.php  # Services, routes, middleware
+│   │   └── Http/Controllers/        # Auth and User controllers
 │   ├── Email/             # Email service module
 │   │   └── EmailServiceProvider.php
 │   ├── Queue/             # Background job queue module
@@ -120,14 +130,17 @@ src/
 │       ├── Application/   # Use cases and services
 │       ├── Domain/        # Entities, value objects, interfaces
 │       ├── Infrastructure/# Repository implementations
-│       ├── {Module}ServiceProvider.php  # Service registration
-│       └── routes.php                   # Module routes (optional)
+│       ├── Http/Controllers/ # Module controllers
+│       └── {Module}ServiceProvider.php  # Services, routes, middleware
 ├── Shared/
-│   ├── Container/         # Dependency injection container
+│   ├── Cli/               # CliBootstrap for CLI container setup
+│   ├── Container/         # ContainerInterface (PSR-11) and Container
 │   ├── Database/          # Fluent query builder
+│   ├── Events/            # EventDispatcher for cross-module communication
 │   ├── Exceptions/        # Shared exception types
 │   ├── Providers/         # ServiceProvider base class
-│   └── Twig/              # Twig extensions
+│   ├── Session/           # FlashMessageService
+│   └── Twig/              # Twig extensions (AppExtension)
 └── Views/                 # Twig templates
 ```
 
@@ -151,10 +164,11 @@ All modules are opt-in via `.env` configuration flags.
 
 Provides session-based authentication with role-based access control:
 
-- Login/logout functionality
-- User CRUD operations (admin-only)
+- Login/logout functionality with flash messages
+- User CRUD operations (admin-only) with flash messages
 - CSRF protection on POST/PUT/DELETE requests
 - Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware`
+- Self-registers routes, middleware, and route access via provider interfaces
 
 **Create an admin user:**
 
@@ -217,7 +231,7 @@ Database-backed job queue with worker process:
 
 ```php
 use App\Modules\Queue\Domain\JobInterface;
-use App\Shared\Container\Container;
+use App\Shared\Container\ContainerInterface;
 
 readonly class SendWelcomeEmail implements JobInterface
 {
@@ -225,9 +239,9 @@ readonly class SendWelcomeEmail implements JobInterface
         private string $email,
     ) {}
 
-    public function handle(Container $container): void
+    public function handle(ContainerInterface $container): void
     {
-        // Jobs receive the container and can access services
+        // Jobs receive the container interface and can access services
         $emailService = $container->get(EmailServiceInterface::class);
         $emailService->send($this->email, 'Welcome!', 'Thanks for joining.');
     }
@@ -344,11 +358,12 @@ npm run dev        # Watch mode - rebuilds on changes
 npm run build      # Production build
 ```
 
-Templates use Twig with asset versioning:
+Templates use Twig with asset versioning and named route URLs:
 
 ```twig
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-<script src="{{ asset('js/app.js') }}"></script>
+<a href="{{ path('users.index') }}">Users</a>
+<a href="{{ path('users.edit', {id: user.id}) }}">Edit</a>
 ```
 
 ## Creating a New Module
@@ -368,8 +383,9 @@ Follow these steps to add a new module:
    │   └── Repositories/
    ├── Database/
    │   └── Migrations/
-   ├── {ModuleName}ServiceProvider.php
-   └── routes.php (optional)
+   ├── Http/
+   │   └── Controllers/
+   └── {ModuleName}ServiceProvider.php
    ```
 
 2. **Start with Domain Layer** - Define value objects, entities, and repository interfaces
@@ -378,20 +394,28 @@ Follow these steps to add a new module:
 
 4. **Add Infrastructure Layer** - Implement repository interfaces with SQLite (prefer QueryBuilder for simple CRUD)
 
-5. **Create ServiceProvider** - Register module services:
+5. **Create ServiceProvider** - Register services, routes, middleware, and route access. Implement provider interfaces as needed:
    ```php
    <?php
    namespace App\Modules\YourModule;
 
+   use App\Http\RouteProviderInterface;
+   use App\Http\Router;
    use App\Shared\Providers\ServiceProvider;
 
-   final class YourModuleServiceProvider extends ServiceProvider
+   final class YourModuleServiceProvider extends ServiceProvider implements RouteProviderInterface
    {
        public function register(): void
        {
            $this->container->set(YourServiceInterface::class, function () {
                // Register services
            });
+       }
+
+       public function routes(Router $router): void
+       {
+           $router->get('/your-route', YourController::class, 'index', 'your.index');
+           $router->post('/your-route', YourController::class, 'store', 'your.store');
        }
 
        public function boot(): void
@@ -401,17 +425,9 @@ Follow these steps to add a new module:
    }
    ```
 
-6. **Create routes file** (if module has HTTP routes):
-   ```php
-   <?php
-   use App\Http\Router;
+6. **Place controllers** in `src/Modules/{ModuleName}/Http/Controllers/` with namespace `App\Modules\{ModuleName}\Http\Controllers`
 
-   return static function (Router $router): void {
-       $router->get('/your-route', YourController::class, 'index', 'your.index');
-   };
-   ```
-
-7. **Add SQL migration** in `src/Modules/{ModuleName}/Database/Migrations/`
+7. **Add SQL migration** in `src/Modules/{ModuleName}/Database/Migrations/` using timestamp naming: `YYYY_MM_DD_HHMMSS_description.sql`
 
 8. **Add module toggle:**
    - `.env.example`: `MODULE_{NAME}=false`
@@ -424,18 +440,11 @@ Follow these steps to add a new module:
        $container->registerProvider(new YourModuleServiceProvider($container, $config));
    }
    ```
+   Routes, middleware, and route access are automatically collected from the provider interfaces.
 
-10. **Load routes in index.php** (if applicable):
-    ```php
-    if ($config['modules']['yourmodule']) {
-        $routes = require __DIR__ . '/../src/Modules/YourModule/routes.php';
-        $routes($router);
-    }
-    ```
+10. **Add Twig templates** in `src/Views/{module}/` — use `{{ path('route.name') }}` for all URLs
 
-11. **Add Twig templates** in `src/Views/{module}/`
-
-12. **Verify deptrac passes** - No layer violations allowed
+11. **Verify deptrac passes** - No layer violations allowed
 
 ## Code Conventions
 

@@ -294,11 +294,13 @@ my-awesome-project/
 ├── src/                    # Your application code
 │   ├── Modules/           # Feature modules (Auth, Email, Queue)
 │   │   ├── Auth/         # Everything related to user login
+│   │   │   └── Http/Controllers/  # Auth controllers
 │   │   ├── Email/        # Email sending code
 │   │   └── Queue/        # Background job code
 │   ├── Views/            # HTML templates (what users see)
+│   ├── Shared/           # Shared utilities (container, events, flash messages)
 │   └── Http/
-│       └── Controllers/  # Code that handles user requests
+│       └── Controllers/  # Core controllers (Home, Health)
 ├── public/               # Publicly accessible files
 │   ├── index.php        # Main entry point
 │   ├── css/             # Stylesheets
@@ -326,7 +328,7 @@ Create a new file: `src/Views/contact.twig`
 <div class="max-w-2xl mx-auto">
     <h1 class="text-3xl font-bold mb-6">Contact Us</h1>
 
-    <form method="POST" action="/contact">
+    <form method="POST" action="{{ path('contact.store') }}">
         <div class="mb-4">
             <label class="block mb-2">Your Name</label>
             <input type="text" name="name" required
@@ -356,7 +358,7 @@ Create a new file: `src/Views/contact.twig`
 
 **What this does:** Creates a contact form with fields for name, email, and message.
 
-**Step 2:** You would then create a Controller to handle this form, add a route, and process the submission. (See CLAUDE.md for technical details on how to do this)
+**Step 2:** You would then create a Controller in your module's `Http/Controllers/` directory, register routes in your ServiceProvider (implementing `RouteProviderInterface`), and process the submission. (See CLAUDE.md for technical details on how to do this)
 
 ---
 

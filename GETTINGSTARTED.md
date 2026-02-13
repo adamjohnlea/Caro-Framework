@@ -93,16 +93,16 @@ php cli/worker.php --queue=default --sleep=3
 Create a job by implementing `JobInterface`:
 
 ```php
-use App\Shared\Container\Container;
+use App\Shared\Container\ContainerInterface;
 
 final readonly class SendWelcomeEmailJob implements JobInterface
 {
     public function __construct(private int $userId) {}
 
     #[Override]
-    public function handle(Container $container): void
+    public function handle(ContainerInterface $container): void
     {
-        // Jobs receive the container to access services
+        // Jobs receive the container interface to access services
         $emailService = $container->get(EmailServiceInterface::class);
         // Send the email...
     }
@@ -165,17 +165,21 @@ src/Modules/Todo/
             SqliteTodoRepository.php
     Database/
         Migrations/
-            003_create_todos_table.sql
+            2025_06_15_120000_create_todos_table.sql
+    Http/
+        Controllers/
+            TodoController.php
+    TodoServiceProvider.php
 ```
 
 Start with the Domain layer (value objects + interfaces), write tests first, then build outward. See `CLAUDE.md` for the full workflow.
 
 ### 3. Create your first migration
 
-Add a numbered SQL file to `src/Modules/{ModuleName}/Database/Migrations/`:
+Add a timestamp-named SQL file to `src/Modules/{ModuleName}/Database/Migrations/`:
 
 ```sql
--- src/Modules/Todo/Database/Migrations/003_create_todos_table.sql
+-- src/Modules/Todo/Database/Migrations/2025_06_15_120000_create_todos_table.sql
 CREATE TABLE IF NOT EXISTS todos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -185,30 +189,49 @@ CREATE TABLE IF NOT EXISTS todos (
 );
 ```
 
-Migration files are globally numbered across all modules. Add your module to the `MigrationRunner` module map.
+Migration files use timestamp naming (`YYYY_MM_DD_HHMMSS_description.sql`) to avoid numbering conflicts between modules. Add your module to the `MigrationRunner` module map.
 
-### 4. Register services in the container
+### 4. Create a ServiceProvider
 
-In `public/index.php`, add your service registrations behind a module flag:
+Each module registers its own services, routes, and middleware through a ServiceProvider:
 
 ```php
-if ($config['modules']['todo']) {
-    $container->set(TodoRepositoryInterface::class, static function () use ($container): TodoRepositoryInterface {
-        /** @var Database $database */
-        $database = $container->get(Database::class);
-        return new SqliteTodoRepository($database);
-    });
+<?php
+namespace App\Modules\Todo;
+
+use App\Http\RouteProviderInterface;
+use App\Http\Router;
+use App\Shared\Providers\ServiceProvider;
+
+final class TodoServiceProvider extends ServiceProvider implements RouteProviderInterface
+{
+    public function register(): void
+    {
+        $this->container->set(TodoRepositoryInterface::class, function () {
+            $database = $this->container->get(Database::class);
+            return new SqliteTodoRepository($database);
+        });
+    }
+
+    public function routes(Router $router): void
+    {
+        $router->get('/todos', TodoController::class, 'index', 'todos.index');
+        $router->post('/todos', TodoController::class, 'store', 'todos.store');
+    }
 }
 ```
 
-### 5. Add routes
+Then register it in `public/index.php` behind a module flag:
 
 ```php
-$router->get('/todos', TodoController::class, 'index', 'todos.index');
-$router->post('/todos', TodoController::class, 'store', 'todos.store');
+if ($config['modules']['todo']) {
+    $container->registerProvider(new TodoServiceProvider($container, $config));
+}
 ```
 
-### 6. Add templates
+Routes and middleware are automatically collected from the provider interfaces.
+
+### 5. Add templates
 
 Create Twig templates in `src/Views/{module}/` extending the base layout:
 
@@ -222,11 +245,12 @@ Create Twig templates in `src/Views/{module}/` extending the base layout:
 {% endblock %}
 
 {% block content %}
+    <a href="{{ path('todos.store') }}">Add Todo</a>
     {# Your content here #}
 {% endblock %}
 ```
 
-Update the navigation in `src/Views/layouts/base.twig` to add your new pages.
+Use `{{ path('route.name') }}` for all URLs instead of hardcoding paths. Navigation in `base.twig` uses path() and is driven by module configuration.
 
 ## CLI Tools
 

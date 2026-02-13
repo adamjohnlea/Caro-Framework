@@ -15,12 +15,19 @@ This is a PHP 8.4 + SQLite application using a modular DDD-inspired architecture
 src/
   Database/           # Database wrapper, migration runner, SQL migrations, Grammar
   Http/
-    Controllers/      # HTTP controllers (thin, delegate to services)
+    Controllers/      # Core HTTP controllers (Home, Health — thin, delegate to services)
     Middleware/        # Request/response middleware pipeline
+    ControllerDispatcher.php   # Reflection-based controller dispatch
+    UrlGenerator.php           # Named route URL generation
+    RouteProviderInterface.php       # Module route self-registration
+    MiddlewareProviderInterface.php  # Module middleware self-registration
+    RouteAccessProviderInterface.php # Module route access declarations
+    RouteAccessRegistry.php          # Mutable public/admin route registry
   Modules/
     Auth/             # Authentication, users, CSRF, session management
-      AuthServiceProvider.php  # Register Auth services
-      routes.php               # Auth routes
+      AuthServiceProvider.php  # Register Auth services, routes, middleware
+      Http/
+        Controllers/  # Auth and User controllers
     Email/            # Email service (SES + Log fallback)
       EmailServiceProvider.php # Register Email services
     Queue/            # Database-backed job queue with worker
@@ -35,15 +42,19 @@ src/
       Infrastructure/
         Repositories/ # SQLite implementations of domain interfaces
       Database/
-        Migrations/   # Module-specific SQL migrations
-      {ModuleName}ServiceProvider.php  # Service registration
-      routes.php                       # Module routes (if needed)
+        Migrations/   # Module-specific SQL migrations (timestamp-named)
+      Http/
+        Controllers/  # Module HTTP controllers
+      {ModuleName}ServiceProvider.php  # Service, route, and middleware registration
   Shared/
-    Container/        # Service container with provider support
+    Cli/              # CliBootstrap for CLI tool container setup
+    Container/        # ContainerInterface (PSR-11) and Container implementation
     Database/         # QueryBuilder (fluent, immutable)
+    Events/           # EventDispatcherInterface and sync EventDispatcher
     Exceptions/       # Shared exception types
     Providers/        # ServiceProvider base class
-    Twig/             # Twig extensions
+    Session/          # FlashMessageService (session-based flash messages)
+    Twig/             # Twig extensions (AppExtension, UrlGeneratorInterface)
   Views/
     layouts/          # Base Twig templates
     errors/           # Error page templates
@@ -51,9 +62,9 @@ src/
     users/            # User management CRUD
     css/              # Tailwind source CSS
 cli/
-  create-admin.php    # Create admin user
-  worker.php          # Queue worker process
-  doctor.php          # Health check / smoke test
+  create-admin.php    # Create admin user (uses CliBootstrap)
+  worker.php          # Queue worker process (uses CliBootstrap)
+  doctor.php          # Health check / smoke test (uses CliBootstrap)
 tests/
   Unit/               # Fast, isolated tests (no I/O)
   Integration/        # Tests with database (in-memory SQLite)
@@ -75,7 +86,10 @@ All modules are opt-in via `.env` config flags.
 - Session-based authentication with login/logout
 - User CRUD (admin-only) with role-based access
 - CSRF protection on POST requests
+- Flash messages on login, logout, and all CRUD operations
 - Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware`
+- Self-registers routes, middleware, and route access via provider interfaces
+- Controllers live in `src/Modules/Auth/Http/Controllers/`
 - CLI: `php cli/create-admin.php --email=admin@example.com --password=secret123`
 
 ### Email Module (`MODULE_EMAIL=true`)
@@ -86,8 +100,8 @@ All modules are opt-in via `.env` config flags.
 
 ### Queue Module (`MODULE_QUEUE=true`)
 - Database-backed job queue with `QueueService.dispatch()`, `processNext()`, `retryFailed()`
-- `JobInterface` contract for queueable jobs with `handle(Container $container)` method
-- Jobs receive the service container, allowing access to repositories and services
+- `JobInterface` contract for queueable jobs with `handle(ContainerInterface $container)` method
+- Jobs receive the container interface, allowing access to repositories and services
 - Jobs are serialized using PHP's `serialize()` for persistence
 - Transaction-locked job claiming to prevent double-processing
 - CLI worker: `php cli/worker.php --queue=default --sleep=3`
@@ -147,11 +161,19 @@ php cli/doctor.php
 - **Service Providers**: Each module has a `{ModuleName}ServiceProvider` extending `App\Shared\Providers\ServiceProvider`
   - `register()` method registers services into the container
   - Optional `boot()` method for post-registration setup (e.g., adding Twig globals)
-  - Providers receive `Container $container` and `array $config` in constructor
+  - Providers receive `ContainerInterface $container` and `array $config` in constructor
+  - Implement `RouteProviderInterface` to self-register routes
+  - Implement `MiddlewareProviderInterface` to self-register middleware
+  - Implement `RouteAccessProviderInterface` to declare public/admin routes
+- **URL generation**: Use `UrlGenerator::generate('route.name', ['param' => value])` in controllers, `{{ path('route.name') }}` in templates
+- **Flash messages**: Use `FlashMessageService::flash('success', 'message')` after redirect actions. Rendered automatically in `base.twig`.
+- **Event dispatcher**: Use `EventDispatcherInterface` for cross-module communication without direct dependencies
+- **CLI tools**: Use `CliBootstrap::createContainer($config)` in CLI scripts instead of manual container wiring
 
 ### Frontend
 - Tailwind CSS 4 uses `@import "tailwindcss"` (not `@tailwind` directives)
 - Asset paths use the `{{ asset('path') }}` Twig function for cache busting
+- URL paths use the `{{ path('route.name', {param: value}) }}` Twig function — never hardcode URLs
 - Alpine.js for interactive behavior, avoid inline JS
 
 ### Testing
@@ -167,9 +189,9 @@ php cli/doctor.php
 2. Start with Domain layer (value objects, models, repository interfaces)
 3. Add Application layer (services)
 4. Add Infrastructure layer (SQLite repositories using QueryBuilder for simple CRUD)
-5. Create `{ModuleName}ServiceProvider.php` in the module root:
+5. Create `{ModuleName}ServiceProvider.php` in the module root. Implement provider interfaces for routes, middleware, and route access as needed:
    ```php
-   final class FooServiceProvider extends ServiceProvider
+   final class FooServiceProvider extends ServiceProvider implements RouteProviderInterface, MiddlewareProviderInterface, RouteAccessProviderInterface
    {
        public function register(): void
        {
@@ -177,15 +199,29 @@ php cli/doctor.php
                // Register your services
            });
        }
+
+       public function routes(Router $router): void
+       {
+           $router->get('/foo', FooController::class, 'index', 'foo.index');
+           $router->post('/foo', FooController::class, 'store', 'foo.store');
+       }
+
+       public function middleware(): array
+       {
+           return []; // Return MiddlewareInterface instances if needed
+       }
+
+       public function routeAccess(): array
+       {
+           return [
+               'public' => [], // Paths accessible without authentication
+               'admin' => [],  // Path prefixes requiring admin role
+           ];
+       }
    }
    ```
-6. Create `routes.php` in the module root (if the module has HTTP routes):
-   ```php
-   return static function (Router $router): void {
-       $router->get('/foo', FooController::class, 'index', 'foo.index');
-   };
-   ```
-7. Add SQL migration in `src/Modules/{ModuleName}/Database/Migrations/` (globally numbered)
+6. Place controllers in `src/Modules/{ModuleName}/Http/Controllers/` with namespace `App\Modules\{ModuleName}\Http\Controllers`
+7. Add SQL migration in `src/Modules/{ModuleName}/Database/Migrations/` using timestamp naming: `YYYY_MM_DD_HHMMSS_description.sql`
 8. Add module toggle to `.env.example`, `config/config.php`, and `MigrationRunner` module map
 9. Register provider in `public/index.php` behind the module flag:
    ```php
@@ -193,12 +229,6 @@ php cli/doctor.php
        $container->registerProvider(new FooServiceProvider($container, $config));
    }
    ```
-10. Load routes in `public/index.php` (if applicable):
-    ```php
-    if ($config['modules']['foo']) {
-        $fooRoutes = require __DIR__ . '/../src/Modules/Foo/routes.php';
-        $fooRoutes($router);
-    }
-    ```
-11. Add Twig templates under `src/Views/{module}/`
-12. Ensure deptrac passes — no layer violations
+   Routes, middleware, and route access are automatically collected from the provider interfaces — no additional wiring needed.
+10. Add Twig templates under `src/Views/{module}/` — use `{{ path('route.name') }}` for URLs
+11. Ensure deptrac passes — no layer violations
