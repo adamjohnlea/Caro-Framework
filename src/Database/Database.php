@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Database\Grammar\GrammarInterface;
+use App\Database\Grammar\SqliteGrammar;
+use App\Shared\Database\QueryBuilder;
 use PDO;
 use PDOStatement;
 
 final readonly class Database
 {
     private PDO $pdo;
+    private GrammarInterface $grammar;
 
     public function __construct(string $dsn, string $username = '', string $password = '')
     {
@@ -24,6 +28,10 @@ final readonly class Database
         if (str_starts_with($dsn, 'sqlite:')) {
             $this->pdo->exec('PRAGMA journal_mode=WAL');
             $this->pdo->exec('PRAGMA foreign_keys=ON');
+            $this->grammar = new SqliteGrammar();
+        } else {
+            // Default to SQLite grammar for now
+            $this->grammar = new SqliteGrammar();
         }
     }
 
@@ -72,5 +80,12 @@ final readonly class Database
     {
         /** @var string */
         return $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    }
+
+    public function table(string $table): QueryBuilder
+    {
+        $builder = new QueryBuilder($this, $this->grammar);
+
+        return $builder->table($table);
     }
 }

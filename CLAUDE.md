@@ -19,8 +19,12 @@ src/
     Middleware/        # Request/response middleware pipeline
   Modules/
     Auth/             # Authentication, users, CSRF, session management
+      AuthServiceProvider.php  # Register Auth services
+      routes.php               # Auth routes
     Email/            # Email service (SES + Log fallback)
+      EmailServiceProvider.php # Register Email services
     Queue/            # Database-backed job queue with worker
+      QueueServiceProvider.php # Register Queue services
     {ModuleName}/
       Application/
         Services/     # Use cases, orchestration logic
@@ -32,10 +36,13 @@ src/
         Repositories/ # SQLite implementations of domain interfaces
       Database/
         Migrations/   # Module-specific SQL migrations
+      {ModuleName}ServiceProvider.php  # Service registration
+      routes.php                       # Module routes (if needed)
   Shared/
-    Container/        # Simple service container
+    Container/        # Service container with provider support
     Database/         # QueryBuilder (fluent, immutable)
     Exceptions/       # Shared exception types
+    Providers/        # ServiceProvider base class
     Twig/             # Twig extensions
   Views/
     layouts/          # Base Twig templates
@@ -79,7 +86,9 @@ All modules are opt-in via `.env` config flags.
 
 ### Queue Module (`MODULE_QUEUE=true`)
 - Database-backed job queue with `QueueService.dispatch()`, `processNext()`, `retryFailed()`
-- `JobInterface` contract for queueable jobs
+- `JobInterface` contract for queueable jobs with `handle(Container $container)` method
+- Jobs receive the service container, allowing access to repositories and services
+- Jobs are serialized using PHP's `serialize()` for persistence
 - Transaction-locked job claiming to prevent double-processing
 - CLI worker: `php cli/worker.php --queue=default --sleep=3`
 - Graceful shutdown on SIGTERM/SIGINT
@@ -89,7 +98,9 @@ All modules are opt-in via `.env` config flags.
 - Dialect-aware via `GrammarInterface` (SQLite grammar included)
 - Supports SELECT, INSERT, INSERT IGNORE, UPDATE, DELETE, JOIN, ORDER BY, LIMIT
 - Returns raw assoc arrays — hydration stays in repositories
-- Available as an alternative to raw SQL via `Database::query()`
+- **Preferred for simple CRUD operations** (INSERT, UPDATE, DELETE, basic SELECT)
+- **Raw SQL is acceptable for complex queries** (transactions with multiple operations, complex JOINs, window functions)
+- Document complex raw SQL with comments explaining why QueryBuilder isn't suitable
 
 ## Development Workflow
 
@@ -133,6 +144,10 @@ php cli/doctor.php
 - Repository interfaces live in Domain, implementations in Infrastructure
 - Controllers are thin — they delegate to Application Services
 - Avoid `new ClassName()->method()` chaining — deptrac's parser can't handle it. Use a variable.
+- **Service Providers**: Each module has a `{ModuleName}ServiceProvider` extending `App\Shared\Providers\ServiceProvider`
+  - `register()` method registers services into the container
+  - Optional `boot()` method for post-registration setup (e.g., adding Twig globals)
+  - Providers receive `Container $container` and `array $config` in constructor
 
 ### Frontend
 - Tailwind CSS 4 uses `@import "tailwindcss"` (not `@tailwind` directives)
@@ -151,10 +166,39 @@ php cli/doctor.php
 1. Create the directory structure under `src/Modules/{ModuleName}/`
 2. Start with Domain layer (value objects, models, repository interfaces)
 3. Add Application layer (services)
-4. Add Infrastructure layer (SQLite repositories)
-5. Add SQL migration in `src/Modules/{ModuleName}/Database/Migrations/` (globally numbered)
-6. Add module toggle to `.env.example`, `config/config.php`, and `MigrationRunner` module map
-7. Register services in the container (`public/index.php`) behind the module flag
-8. Add routes and controller
-9. Add Twig templates under `src/Views/{module}/`
-10. Ensure deptrac passes — no layer violations
+4. Add Infrastructure layer (SQLite repositories using QueryBuilder for simple CRUD)
+5. Create `{ModuleName}ServiceProvider.php` in the module root:
+   ```php
+   final class FooServiceProvider extends ServiceProvider
+   {
+       public function register(): void
+       {
+           $this->container->set(FooServiceInterface::class, function () {
+               // Register your services
+           });
+       }
+   }
+   ```
+6. Create `routes.php` in the module root (if the module has HTTP routes):
+   ```php
+   return static function (Router $router): void {
+       $router->get('/foo', FooController::class, 'index', 'foo.index');
+   };
+   ```
+7. Add SQL migration in `src/Modules/{ModuleName}/Database/Migrations/` (globally numbered)
+8. Add module toggle to `.env.example`, `config/config.php`, and `MigrationRunner` module map
+9. Register provider in `public/index.php` behind the module flag:
+   ```php
+   if ($config['modules']['foo']) {
+       $container->registerProvider(new FooServiceProvider($container, $config));
+   }
+   ```
+10. Load routes in `public/index.php` (if applicable):
+    ```php
+    if ($config['modules']['foo']) {
+        $fooRoutes = require __DIR__ . '/../src/Modules/Foo/routes.php';
+        $fooRoutes($router);
+    }
+    ```
+11. Add Twig templates under `src/Views/{module}/`
+12. Ensure deptrac passes — no layer violations

@@ -7,8 +7,10 @@ namespace App\Modules\Queue\Application\Services;
 use App\Modules\Queue\Domain\JobInterface;
 use App\Modules\Queue\Domain\Models\QueuedJob;
 use App\Modules\Queue\Domain\Repositories\QueueRepositoryInterface;
+use App\Shared\Container\Container;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 final readonly class QueueService
@@ -16,6 +18,7 @@ final readonly class QueueService
     public function __construct(
         private QueueRepositoryInterface $queueRepository,
         private LoggerInterface $logger,
+        private Container $container,
     ) {
     }
 
@@ -27,7 +30,7 @@ final readonly class QueueService
             id: null,
             queue: $job->getQueue(),
             jobClass: $job::class,
-            payload: json_encode($job, JSON_THROW_ON_ERROR),
+            payload: serialize($job),
             status: 'pending',
             attempts: 0,
             maxAttempts: $job->getMaxAttempts(),
@@ -60,9 +63,14 @@ final readonly class QueueService
         }
 
         try {
-            /** @var JobInterface $jobInstance */
-            $jobInstance = new $jobClass();
-            $jobInstance->handle();
+            $payload = $job->getPayload();
+            $jobInstance = unserialize($payload, ['allowed_classes' => true]);
+
+            if (!$jobInstance instanceof JobInterface) {
+                throw new RuntimeException('Deserialized job is not an instance of JobInterface');
+            }
+
+            $jobInstance->handle($this->container);
 
             $job->setStatus('completed');
             $job->setCompletedAt(new DateTimeImmutable());

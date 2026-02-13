@@ -4,6 +4,12 @@ A modern, modular PHP framework built with Domain-Driven Design principles, feat
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+## Documentation
+
+- **[Starting Your Own Project](STARTINGYOUROWNPROJECT.md)** - Beginner-friendly guide with everything you need to build your first application
+- **[Getting Started](GETTINGSTARTED.md)** - Quick setup guide for developers
+- **[Project Instructions](CLAUDE.md)** - Technical documentation for contributors
+
 ## Features
 
 - **Modern PHP 8.4** with strict types and readonly classes
@@ -102,16 +108,23 @@ src/
 │   └── Middleware/        # Request/response middleware
 ├── Modules/
 │   ├── Auth/              # Authentication module
+│   │   ├── AuthServiceProvider.php  # Service registration
+│   │   └── routes.php               # Module routes
 │   ├── Email/             # Email service module
+│   │   └── EmailServiceProvider.php
 │   ├── Queue/             # Background job queue module
+│   │   └── QueueServiceProvider.php
 │   └── {YourModule}/      # Custom modules
 │       ├── Application/   # Use cases and services
 │       ├── Domain/        # Entities, value objects, interfaces
-│       └── Infrastructure/# Repository implementations
+│       ├── Infrastructure/# Repository implementations
+│       ├── {Module}ServiceProvider.php  # Service registration
+│       └── routes.php                   # Module routes (optional)
 ├── Shared/
 │   ├── Container/         # Dependency injection container
 │   ├── Database/          # Fluent query builder
 │   ├── Exceptions/        # Shared exception types
+│   ├── Providers/         # ServiceProvider base class
 │   └── Twig/              # Twig extensions
 └── Views/                 # Twig templates
 ```
@@ -202,6 +215,7 @@ Database-backed job queue with worker process:
 
 ```php
 use App\Modules\Queue\Domain\JobInterface;
+use App\Shared\Container\Container;
 
 readonly class SendWelcomeEmail implements JobInterface
 {
@@ -209,9 +223,21 @@ readonly class SendWelcomeEmail implements JobInterface
         private string $email,
     ) {}
 
-    public function handle(): void
+    public function handle(Container $container): void
     {
-        // Send the email
+        // Jobs receive the container and can access services
+        $emailService = $container->get(EmailServiceInterface::class);
+        $emailService->send($this->email, 'Welcome!', 'Thanks for joining.');
+    }
+
+    public function getQueue(): string
+    {
+        return 'default';
+    }
+
+    public function getMaxAttempts(): int
+    {
+        return 3;
     }
 }
 ```
@@ -338,30 +364,76 @@ Follow these steps to add a new module:
    │   └── Repositories/
    ├── Infrastructure/
    │   └── Repositories/
-   └── Database/
-       └── Migrations/
+   ├── Database/
+   │   └── Migrations/
+   ├── {ModuleName}ServiceProvider.php
+   └── routes.php (optional)
    ```
 
 2. **Start with Domain Layer** - Define value objects, entities, and repository interfaces
 
 3. **Add Application Layer** - Create services that orchestrate domain logic
 
-4. **Add Infrastructure Layer** - Implement repository interfaces with SQLite
+4. **Add Infrastructure Layer** - Implement repository interfaces with SQLite (prefer QueryBuilder for simple CRUD)
 
-5. **Add SQL migration** in `src/Modules/{ModuleName}/Database/Migrations/`
+5. **Create ServiceProvider** - Register module services:
+   ```php
+   <?php
+   namespace App\Modules\YourModule;
 
-6. **Add module toggle:**
+   use App\Shared\Providers\ServiceProvider;
+
+   final class YourModuleServiceProvider extends ServiceProvider
+   {
+       public function register(): void
+       {
+           $this->container->set(YourServiceInterface::class, function () {
+               // Register services
+           });
+       }
+
+       public function boot(): void
+       {
+           // Optional: Post-registration setup
+       }
+   }
+   ```
+
+6. **Create routes file** (if module has HTTP routes):
+   ```php
+   <?php
+   use App\Http\Router;
+
+   return static function (Router $router): void {
+       $router->get('/your-route', YourController::class, 'index', 'your.index');
+   };
+   ```
+
+7. **Add SQL migration** in `src/Modules/{ModuleName}/Database/Migrations/`
+
+8. **Add module toggle:**
    - `.env.example`: `MODULE_{NAME}=false`
    - `config/config.php`: Add to config array
    - `MigrationRunner`: Add to module map
 
-7. **Register services** in `public/index.php` behind the module flag
+9. **Register provider in index.php**:
+   ```php
+   if ($config['modules']['yourmodule']) {
+       $container->registerProvider(new YourModuleServiceProvider($container, $config));
+   }
+   ```
 
-8. **Add routes and controller** in `src/Http/Controllers/`
+10. **Load routes in index.php** (if applicable):
+    ```php
+    if ($config['modules']['yourmodule']) {
+        $routes = require __DIR__ . '/../src/Modules/YourModule/routes.php';
+        $routes($router);
+    }
+    ```
 
-9. **Add Twig templates** in `src/Views/{module}/`
+11. **Add Twig templates** in `src/Views/{module}/`
 
-10. **Verify deptrac passes** - No layer violations allowed
+12. **Verify deptrac passes** - No layer violations allowed
 
 ## Code Conventions
 

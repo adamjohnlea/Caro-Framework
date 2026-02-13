@@ -8,6 +8,7 @@ use App\Modules\Queue\Application\Services\QueueService;
 use App\Modules\Queue\Domain\JobInterface;
 use App\Modules\Queue\Domain\Models\QueuedJob;
 use App\Modules\Queue\Domain\Repositories\QueueRepositoryInterface;
+use App\Shared\Container\Container;
 use DateTimeImmutable;
 use Override;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -18,6 +19,7 @@ final class QueueServiceTest extends TestCase
 {
     private MockObject $repository;
     private MockObject $logger;
+    private Container $container;
     private QueueService $service;
 
     protected function setUp(): void
@@ -25,29 +27,13 @@ final class QueueServiceTest extends TestCase
         parent::setUp();
         $this->repository = $this->createMock(QueueRepositoryInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->service = new QueueService($this->repository, $this->logger);
+        $this->container = new Container();
+        $this->service = new QueueService($this->repository, $this->logger, $this->container);
     }
 
     public function test_dispatch_creates_queued_job(): void
     {
-        $job = new class () implements JobInterface {
-            #[Override]
-            public function handle(): void
-            {
-            }
-
-            #[Override]
-            public function getQueue(): string
-            {
-                return 'email';
-            }
-
-            #[Override]
-            public function getMaxAttempts(): int
-            {
-                return 5;
-            }
-        };
+        $job = new TestJob();
 
         $this->repository->expects($this->once())
             ->method('save')
@@ -146,5 +132,25 @@ final class QueueServiceTest extends TestCase
         $this->repository->method('countPending')->willReturn(5);
 
         $this->assertSame(5, $this->service->countPending());
+    }
+}
+
+final readonly class TestJob implements JobInterface
+{
+    #[Override]
+    public function handle(Container $container): void
+    {
+    }
+
+    #[Override]
+    public function getQueue(): string
+    {
+        return 'email';
+    }
+
+    #[Override]
+    public function getMaxAttempts(): int
+    {
+        return 5;
     }
 }

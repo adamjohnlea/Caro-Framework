@@ -21,22 +21,18 @@ final readonly class SqliteQueueRepository implements QueueRepositoryInterface
     #[Override]
     public function save(QueuedJob $job): QueuedJob
     {
-        $this->database->query(
-            'INSERT INTO jobs (queue, job_class, payload, status, attempts, max_attempts, error_message, available_at, created_at, completed_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                $job->getQueue(),
-                $job->getJobClass(),
-                $job->getPayload(),
-                $job->getStatus(),
-                $job->getAttempts(),
-                $job->getMaxAttempts(),
-                $job->getErrorMessage(),
-                $job->getAvailableAt()->format('Y-m-d H:i:s'),
-                $job->getCreatedAt()->format('Y-m-d H:i:s'),
-                $job->getCompletedAt()?->format('Y-m-d H:i:s'),
-            ],
-        );
+        $this->database->table('jobs')->insert([
+            'queue' => $job->getQueue(),
+            'job_class' => $job->getJobClass(),
+            'payload' => $job->getPayload(),
+            'status' => $job->getStatus(),
+            'attempts' => $job->getAttempts(),
+            'max_attempts' => $job->getMaxAttempts(),
+            'error_message' => $job->getErrorMessage(),
+            'available_at' => $job->getAvailableAt()->format('Y-m-d H:i:s'),
+            'created_at' => $job->getCreatedAt()->format('Y-m-d H:i:s'),
+            'completed_at' => $job->getCompletedAt()?->format('Y-m-d H:i:s'),
+        ]);
 
         $lastId = $this->database->lastInsertId();
         if ($lastId !== false) {
@@ -49,18 +45,20 @@ final readonly class SqliteQueueRepository implements QueueRepositoryInterface
     #[Override]
     public function update(QueuedJob $job): void
     {
-        $this->database->query(
-            'UPDATE jobs SET status = ?, attempts = ?, error_message = ?, completed_at = ? WHERE id = ?',
-            [
-                $job->getStatus(),
-                $job->getAttempts(),
-                $job->getErrorMessage(),
-                $job->getCompletedAt()?->format('Y-m-d H:i:s'),
-                $job->getId(),
-            ],
-        );
+        $this->database->table('jobs')
+            ->where('id', $job->getId(), '=')
+            ->update([
+                'status' => $job->getStatus(),
+                'attempts' => $job->getAttempts(),
+                'error_message' => $job->getErrorMessage(),
+                'completed_at' => $job->getCompletedAt()?->format('Y-m-d H:i:s'),
+            ]);
     }
 
+    /**
+     * Complex transaction-based query - keeping raw SQL for clarity and atomicity.
+     * This SELECT + UPDATE must be atomic to prevent double-processing of jobs.
+     */
     #[Override]
     public function claimNext(string $queue): ?QueuedJob
     {
@@ -107,13 +105,11 @@ final readonly class SqliteQueueRepository implements QueueRepositoryInterface
     #[Override]
     public function findFailed(): array
     {
-        $stmt = $this->database->query(
-            'SELECT * FROM jobs WHERE status = ? ORDER BY created_at ASC',
-            ['failed'],
-        );
-
         /** @var list<array{id: string|int, queue: string, job_class: string, payload: string, status: string, attempts: string|int, max_attempts: string|int, error_message: string|null, available_at: string, created_at: string, completed_at: string|null}> $rows */
-        $rows = $stmt->fetchAll();
+        $rows = $this->database->table('jobs')
+            ->where('status', 'failed', '=')
+            ->orderBy('created_at', 'ASC')
+            ->get();
 
         return array_map($this->hydrateJob(...), $rows);
     }
@@ -121,13 +117,13 @@ final readonly class SqliteQueueRepository implements QueueRepositoryInterface
     #[Override]
     public function countByStatus(string $status): int
     {
-        $stmt = $this->database->query(
-            'SELECT COUNT(*) as count FROM jobs WHERE status = ?',
-            [$status],
-        );
+        $rows = $this->database->table('jobs')
+            ->select(['COUNT(*) as count'])
+            ->where('status', $status, '=')
+            ->get();
 
         /** @var array{count: string|int} $row */
-        $row = $stmt->fetch();
+        $row = $rows[0];
 
         return (int) $row['count'];
     }

@@ -23,16 +23,13 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function save(User $user): User
     {
-        $this->database->query(
-            'INSERT INTO users (email, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-            [
-                $user->getEmail()->getValue(),
-                $user->getPassword()->getHash(),
-                $user->getRole()->value,
-                $user->getCreatedAt()->format('Y-m-d H:i:s'),
-                $user->getUpdatedAt()->format('Y-m-d H:i:s'),
-            ],
-        );
+        $this->database->table('users')->insert([
+            'email' => $user->getEmail()->getValue(),
+            'password_hash' => $user->getPassword()->getHash(),
+            'role' => $user->getRole()->value,
+            'created_at' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
+            'updated_at' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
+        ]);
 
         $lastId = $this->database->lastInsertId();
         if ($lastId !== false) {
@@ -45,16 +42,14 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function update(User $user): User
     {
-        $this->database->query(
-            'UPDATE users SET email = ?, password_hash = ?, role = ?, updated_at = ? WHERE id = ?',
-            [
-                $user->getEmail()->getValue(),
-                $user->getPassword()->getHash(),
-                $user->getRole()->value,
-                $user->getUpdatedAt()->format('Y-m-d H:i:s'),
-                $user->getId(),
-            ],
-        );
+        $this->database->table('users')
+            ->where('id', $user->getId(), '=')
+            ->update([
+                'email' => $user->getEmail()->getValue(),
+                'password_hash' => $user->getPassword()->getHash(),
+                'role' => $user->getRole()->value,
+                'updated_at' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
+            ]);
 
         return $user;
     }
@@ -62,14 +57,16 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function findById(int $id): ?User
     {
-        $stmt = $this->database->query('SELECT * FROM users WHERE id = ?', [$id]);
+        $rows = $this->database->table('users')
+            ->where('id', $id, '=')
+            ->get();
 
-        /** @var array{id: string|int, email: string, password_hash: string, role: string, created_at: string, updated_at: string}|false $row */
-        $row = $stmt->fetch();
-
-        if ($row === false) {
+        if (count($rows) === 0) {
             return null;
         }
+
+        /** @var array{id: string|int, email: string, password_hash: string, role: string, created_at: string, updated_at: string} $row */
+        $row = $rows[0];
 
         return $this->hydrateUser($row);
     }
@@ -77,14 +74,16 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function findByEmail(string $email): ?User
     {
-        $stmt = $this->database->query('SELECT * FROM users WHERE email = ?', [strtolower($email)]);
+        $rows = $this->database->table('users')
+            ->where('email', strtolower($email), '=')
+            ->get();
 
-        /** @var array{id: string|int, email: string, password_hash: string, role: string, created_at: string, updated_at: string}|false $row */
-        $row = $stmt->fetch();
-
-        if ($row === false) {
+        if (count($rows) === 0) {
             return null;
         }
+
+        /** @var array{id: string|int, email: string, password_hash: string, role: string, created_at: string, updated_at: string} $row */
+        $row = $rows[0];
 
         return $this->hydrateUser($row);
     }
@@ -95,10 +94,10 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function findAll(): array
     {
-        $stmt = $this->database->query('SELECT * FROM users ORDER BY email ASC');
-
         /** @var array<array{id: string|int, email: string, password_hash: string, role: string, created_at: string, updated_at: string}> $rows */
-        $rows = $stmt->fetchAll();
+        $rows = $this->database->table('users')
+            ->orderBy('email', 'ASC')
+            ->get();
 
         $users = [];
         foreach ($rows as $row) {
@@ -111,16 +110,20 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     #[Override]
     public function delete(int $id): void
     {
-        $this->database->query('DELETE FROM users WHERE id = ?', [$id]);
+        $this->database->table('users')
+            ->where('id', $id, '=')
+            ->delete();
     }
 
     #[Override]
     public function count(): int
     {
-        $stmt = $this->database->query('SELECT COUNT(*) as count FROM users');
+        $rows = $this->database->table('users')
+            ->select(['COUNT(*) as count'])
+            ->get();
 
         /** @var array{count: string|int} $row */
-        $row = $stmt->fetch();
+        $row = $rows[0];
 
         return (int) $row['count'];
     }
