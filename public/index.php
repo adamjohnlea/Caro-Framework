@@ -24,7 +24,8 @@ use App\Modules\Queue\QueueServiceProvider;
 use App\Shared\Container\Container;
 use App\Shared\Events\EventDispatcher;
 use App\Shared\Events\EventDispatcherInterface;
-use App\Shared\Twig\AssetVersionExtension;
+use App\Shared\Session\FlashMessageService;
+use App\Shared\Twig\AppExtension;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
@@ -62,7 +63,7 @@ $container->set(Database::class, static function () use ($config, $container): D
     return $database;
 });
 
-$container->set(Environment::class, static function () use ($config): Environment {
+$container->set(Environment::class, static function () use ($config, $flashMessageService): Environment {
     $loader = new FilesystemLoader(__DIR__ . '/../src/Views');
     $twig = new Environment($loader, [
         'strict_variables' => true,
@@ -70,7 +71,7 @@ $container->set(Environment::class, static function () use ($config): Environmen
     ]);
 
     $twig->addGlobal('appName', $config['app']['name']);
-    $twig->addExtension(new AssetVersionExtension(__DIR__));
+    $twig->addExtension(new AppExtension(__DIR__, $flashMessageService));
 
     return $twig;
 });
@@ -90,6 +91,9 @@ $container->set(HealthController::class, static function () use ($container): He
 });
 
 $container->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new EventDispatcher());
+
+$flashMessageService = new FlashMessageService();
+$container->set(FlashMessageService::class, static fn (): FlashMessageService => $flashMessageService);
 
 $routeAccessRegistry = new RouteAccessRegistry();
 $routeAccessRegistry->addPublicRoute('/health');

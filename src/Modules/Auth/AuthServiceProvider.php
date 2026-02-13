@@ -21,6 +21,7 @@ use App\Modules\Auth\Http\Controllers\AuthController;
 use App\Modules\Auth\Http\Controllers\UserController;
 use App\Modules\Auth\Infrastructure\Repositories\SqliteUserRepository;
 use App\Shared\Providers\ServiceProvider;
+use App\Shared\Session\FlashMessageService;
 use Override;
 use Twig\Environment;
 
@@ -66,8 +67,10 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
             $authService = $this->container->get(AuthenticationService::class);
             /** @var Environment $twig */
             $twig = $this->container->get(Environment::class);
+            /** @var FlashMessageService $flashMessageService */
+            $flashMessageService = $this->container->get(FlashMessageService::class);
 
-            return new UserController($userService, $authService, $twig);
+            return new UserController($userService, $authService, $twig, $flashMessageService);
         });
     }
 

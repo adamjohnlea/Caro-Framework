@@ -93,6 +93,22 @@
             </div>
         </header>
 
+        {# Flash messages #}
+        {% if has_flash() %}
+            <div class="px-8 pt-4">
+                {% for message in flash_messages() %}
+                    <div class="mb-2 px-4 py-3 rounded-lg text-sm {% if message.type == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% elseif message.type == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}"
+                         x-data="{ show: true }"
+                         x-show="show"
+                         x-init="setTimeout(() => show = false, 5000)"
+                         x-transition.opacity.duration.300ms
+                    >
+                        {{ message.message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {# Page content #}
         <div class="px-8 py-6 fade-in">
             {% block content %}{% endblock %}

@@ -9,6 +9,7 @@ use App\Modules\Auth\Application\Services\UserService;
 use App\Modules\Auth\Domain\Models\User;
 use App\Modules\Auth\Domain\ValueObjects\UserRole;
 use App\Shared\Exceptions\ValidationException;
+use App\Shared\Session\FlashMessageService;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,6 +21,7 @@ final readonly class UserController
         private UserService $userService,
         private AuthenticationService $authService,
         private Environment $twig,
+        private FlashMessageService $flashMessageService,
     ) {
     }
 
@@ -51,6 +53,8 @@ final readonly class UserController
                 password: (string) $request->request->get('password', ''),
                 role: (string) $request->request->get('role', 'viewer'),
             );
+
+            $this->flashMessageService->flash('success', 'User created successfully.');
 
             return new RedirectResponse('/users');
         } catch (ValidationException $e) {
@@ -92,6 +96,8 @@ final readonly class UserController
                 role: (string) $request->request->get('role', 'viewer'),
             );
 
+            $this->flashMessageService->flash('success', 'User updated successfully.');
+
             return new RedirectResponse('/users');
         } catch (ValidationException $e) {
             $user = $this->userService->findById($id);
@@ -120,6 +126,8 @@ final readonly class UserController
 
         try {
             $this->userService->delete($id);
+
+            $this->flashMessageService->flash('success', 'User deleted successfully.');
 
             return new RedirectResponse('/users');
         } catch (ValidationException) {
