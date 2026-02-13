@@ -23,6 +23,8 @@ deptrac:
       collectors:
         - type: directory
           value: src/Http/.*
+        - type: directory
+          value: src/Modules/.*/Http/.*
 
     - name: Shared
       collectors:

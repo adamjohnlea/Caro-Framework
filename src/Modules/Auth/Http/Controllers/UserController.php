@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Modules\Auth\Http\Controllers;
 
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Application\Services\UserService;

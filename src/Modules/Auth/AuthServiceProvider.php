@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Auth;
 
 use App\Database\Database;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
 use App\Http\Middleware\AuthenticationMiddleware;
 use App\Http\Middleware\AuthorizationMiddleware;
 use App\Http\Middleware\CsrfMiddleware;
@@ -18,6 +16,8 @@ use App\Http\Router;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Application\Services\UserService;
 use App\Modules\Auth\Domain\Repositories\UserRepositoryInterface;
+use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\UserController;
 use App\Modules\Auth\Infrastructure\Repositories\SqliteUserRepository;
 use App\Shared\Providers\ServiceProvider;
 use Override;
