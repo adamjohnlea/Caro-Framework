@@ -72,7 +72,7 @@ APP_DEBUG=true
 APP_NAME="My App"
 
 DB_DRIVER=sqlite
-DB_PATH=storage/database.sqlite
+# DB_PATH is optional - defaults to storage/database.sqlite
 
 # Enable modules as needed
 MODULE_AUTH=true

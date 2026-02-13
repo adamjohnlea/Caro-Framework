@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+$dbPath = $_ENV['DB_PATH'] ?? '';
+// Convert relative paths to absolute paths
+if ($dbPath !== '' && !str_starts_with($dbPath, '/')) {
+    $dbPath = __DIR__ . '/../' . $dbPath;
+} elseif ($dbPath === '') {
+    $dbPath = __DIR__ . '/../storage/database.sqlite';
+}
+
 return [
     'app' => [
         'env' => $_ENV['APP_ENV'] ?? 'production',
@@ -10,7 +18,7 @@ return [
     ],
     'database' => [
         'driver' => $_ENV['DB_DRIVER'] ?? 'sqlite',
-        'path' => ($_ENV['DB_PATH'] ?? '') !== '' ? $_ENV['DB_PATH'] : __DIR__ . '/../storage/database.sqlite',
+        'path' => $dbPath,
         'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
         'port' => $_ENV['DB_PORT'] ?? '5432',
         'name' => $_ENV['DB_NAME'] ?? '',
