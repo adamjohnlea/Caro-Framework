@@ -32,7 +32,7 @@ final class ControllerDispatcherTest extends TestCase
             }
         };
 
-        $this->container->set($controller::class, static fn () => $controller);
+        $this->container->set($controller::class, static fn (): object => $controller);
 
         $response = $this->dispatcher->dispatch(
             ['_controller' => $controller::class, '_method' => 'index', '_route' => 'test'],
@@ -51,7 +51,7 @@ final class ControllerDispatcherTest extends TestCase
             }
         };
 
-        $this->container->set($controller::class, static fn () => $controller);
+        $this->container->set($controller::class, static fn (): object => $controller);
 
         $response = $this->dispatcher->dispatch(
             ['_controller' => $controller::class, '_method' => 'store', '_route' => 'test'],
@@ -70,7 +70,7 @@ final class ControllerDispatcherTest extends TestCase
             }
         };
 
-        $this->container->set($controller::class, static fn () => $controller);
+        $this->container->set($controller::class, static fn (): object => $controller);
 
         $response = $this->dispatcher->dispatch(
             ['_controller' => $controller::class, '_method' => 'edit', '_route' => 'test', 'id' => '42'],
@@ -89,7 +89,7 @@ final class ControllerDispatcherTest extends TestCase
             }
         };
 
-        $this->container->set($controller::class, static fn () => $controller);
+        $this->container->set($controller::class, static fn (): object => $controller);
 
         $response = $this->dispatcher->dispatch(
             ['_controller' => $controller::class, '_method' => 'update', '_route' => 'test', 'id' => '7'],
@@ -108,7 +108,7 @@ final class ControllerDispatcherTest extends TestCase
             }
         };
 
-        $this->container->set($controller::class, static fn () => $controller);
+        $this->container->set($controller::class, static fn (): object => $controller);
 
         $response = $this->dispatcher->dispatch(
             ['_controller' => $controller::class, '_method' => 'list', '_route' => 'test'],

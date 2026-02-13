@@ -30,7 +30,7 @@ final class AuthorizationMiddlewareTest extends TestCase
         $middleware = new AuthorizationMiddleware($authService, $registry);
         $request = Request::create('/dashboard');
 
-        $response = $middleware->handle($request, static fn () => new Response('ok'));
+        $response = $middleware->handle($request, static fn (): Response => new Response('ok'));
 
         $this->assertSame('ok', $response->getContent());
     }
@@ -59,7 +59,7 @@ final class AuthorizationMiddlewareTest extends TestCase
         $middleware = new AuthorizationMiddleware($authService, $registry);
         $request = Request::create('/users');
 
-        $response = $middleware->handle($request, static fn () => new Response('ok'));
+        $response = $middleware->handle($request, static fn (): Response => new Response('ok'));
 
         $this->assertSame(403, $response->getStatusCode());
 
@@ -90,7 +90,7 @@ final class AuthorizationMiddlewareTest extends TestCase
         $middleware = new AuthorizationMiddleware($authService, $registry);
         $request = Request::create('/users');
 
-        $response = $middleware->handle($request, static fn () => new Response('ok'));
+        $response = $middleware->handle($request, static fn (): Response => new Response('ok'));
 
         $this->assertSame('ok', $response->getContent());
 

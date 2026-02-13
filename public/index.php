@@ -64,6 +64,9 @@ $container->set(Database::class, static function () use ($config, $container): D
     return $database;
 });
 
+$flashMessageService = new FlashMessageService();
+$container->set(FlashMessageService::class, static fn (): FlashMessageService => $flashMessageService);
+
 $urlGenerator = null;
 
 $container->set(Environment::class, static function () use ($config, $flashMessageService, &$urlGenerator): Environment {
@@ -96,9 +99,6 @@ $container->set(HealthController::class, static function () use ($container): He
 
 $container->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new EventDispatcher());
 
-$flashMessageService = new FlashMessageService();
-$container->set(FlashMessageService::class, static fn (): FlashMessageService => $flashMessageService);
-
 $routeAccessRegistry = new RouteAccessRegistry();
 $routeAccessRegistry->addPublicRoute('/health');
 $container->set(RouteAccessRegistry::class, static fn (): RouteAccessRegistry => $routeAccessRegistry);
@@ -117,9 +117,6 @@ if ($config['modules']['email']) {
 if ($config['modules']['queue']) {
     $container->registerProvider(new QueueServiceProvider($container, $config));
 }
-
-// Boot all providers (runs boot() methods)
-$container->boot();
 
 // Collect route access from providers
 foreach ($container->getProviders() as $provider) {
@@ -153,6 +150,9 @@ foreach ($container->getProviders() as $provider) {
 
 $urlGenerator = new UrlGenerator($router->getRoutes());
 $container->set(UrlGenerator::class, static fn (): UrlGenerator => $urlGenerator);
+
+// Boot all providers (runs boot() methods — after URL generator so Twig has access)
+$container->boot();
 
 // ── Middleware ────────────────────────────────────────────────────────
 

@@ -23,6 +23,11 @@ $password = $options['password'];
 $role = $options['role'] ?? 'admin';
 
 /** @var array{app: array{env: string, debug: bool, name: string}, database: array{driver: string, path: string, host: string, port: string, name: string, user: string, password: string}, modules: array{auth: bool, email: bool, queue: bool}, ses: array{region: string, access_key: string, secret_key: string, from_address: string}} $config */
+if (!$config['modules']['auth']) {
+    echo "Error: Auth module is not enabled. Set MODULE_AUTH=true in .env\n";
+    exit(1);
+}
+
 $container = CliBootstrap::createContainer($config);
 
 /** @var UserService $userService */

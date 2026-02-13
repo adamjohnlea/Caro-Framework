@@ -31,7 +31,7 @@ final class AuthenticationMiddlewareTest extends TestCase
         $middleware = new AuthenticationMiddleware($authService, $registry);
         $request = Request::create('/login');
 
-        $response = $middleware->handle($request, static fn () => new Response('ok'));
+        $response = $middleware->handle($request, static fn (): Response => new Response('ok'));
 
         $this->assertSame('ok', $response->getContent());
     }
@@ -49,7 +49,7 @@ final class AuthenticationMiddlewareTest extends TestCase
         $middleware = new AuthenticationMiddleware($authService, $registry);
         $request = Request::create('/dashboard');
 
-        $response = $middleware->handle($request, static fn () => new Response('ok'));
+        $response = $middleware->handle($request, static fn (): Response => new Response('ok'));
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
     }
@@ -77,7 +77,7 @@ final class AuthenticationMiddlewareTest extends TestCase
         $middleware = new AuthenticationMiddleware($authService, $registry);
         $request = Request::create('/dashboard');
 
-        $response = $middleware->handle($request, static fn () => new Response('ok'));
+        $response = $middleware->handle($request, static fn (): Response => new Response('ok'));
 
         $this->assertSame('ok', $response->getContent());
 

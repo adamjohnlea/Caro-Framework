@@ -7,6 +7,7 @@ namespace App\Http;
 use App\Shared\Twig\UrlGeneratorInterface;
 use Override;
 use RuntimeException;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
 final readonly class UrlGenerator implements UrlGeneratorInterface
@@ -24,7 +25,7 @@ final readonly class UrlGenerator implements UrlGeneratorInterface
     {
         $route = $this->routes->get($name);
 
-        if ($route === null) {
+        if (!$route instanceof Route) {
             throw new RuntimeException(sprintf('Route "%s" not found.', $name));
         }
 
