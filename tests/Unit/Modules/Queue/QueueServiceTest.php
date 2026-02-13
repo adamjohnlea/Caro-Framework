@@ -8,7 +8,7 @@ use App\Modules\Queue\Application\Services\QueueService;
 use App\Modules\Queue\Domain\JobInterface;
 use App\Modules\Queue\Domain\Models\QueuedJob;
 use App\Modules\Queue\Domain\Repositories\QueueRepositoryInterface;
-use App\Shared\Container\Container;
+use App\Shared\Container\ContainerInterface;
 use DateTimeImmutable;
 use Override;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -19,7 +19,7 @@ final class QueueServiceTest extends TestCase
 {
     private MockObject $repository;
     private MockObject $logger;
-    private Container $container;
+    private MockObject $container;
     private QueueService $service;
 
     protected function setUp(): void
@@ -27,7 +27,7 @@ final class QueueServiceTest extends TestCase
         parent::setUp();
         $this->repository = $this->createMock(QueueRepositoryInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->container = new Container();
+        $this->container = $this->createMock(ContainerInterface::class);
         $this->service = new QueueService($this->repository, $this->logger, $this->container);
     }
 
@@ -138,7 +138,7 @@ final class QueueServiceTest extends TestCase
 final readonly class TestJob implements JobInterface
 {
     #[Override]
-    public function handle(Container $container): void
+    public function handle(ContainerInterface $container): void
     {
     }
 

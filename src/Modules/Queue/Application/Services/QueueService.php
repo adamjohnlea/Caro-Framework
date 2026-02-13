@@ -7,7 +7,7 @@ namespace App\Modules\Queue\Application\Services;
 use App\Modules\Queue\Domain\JobInterface;
 use App\Modules\Queue\Domain\Models\QueuedJob;
 use App\Modules\Queue\Domain\Repositories\QueueRepositoryInterface;
-use App\Shared\Container\Container;
+use App\Shared\Container\ContainerInterface;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -18,7 +18,7 @@ final readonly class QueueService
     public function __construct(
         private QueueRepositoryInterface $queueRepository,
         private LoggerInterface $logger,
-        private Container $container,
+        private ContainerInterface $container,
     ) {
     }
 

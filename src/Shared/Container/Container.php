@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Shared\Container;
 
 use App\Shared\Providers\ServiceProvider;
+use Override;
 use RuntimeException;
 
-final class Container
+final class Container implements ContainerInterface
 {
     /** @var array<string, callable(): mixed> */
     private array $factories = [];
@@ -15,7 +16,7 @@ final class Container
     /** @var array<string, mixed> */
     private array $instances = [];
 
-    /** @var array<int, ServiceProvider> */
+    /** @var list<ServiceProvider> */
     private array $providers = [];
 
     private bool $booted = false;
@@ -23,11 +24,13 @@ final class Container
     /**
      * @param callable(): mixed $factory
      */
+    #[Override]
     public function set(string $id, callable $factory): void
     {
         $this->factories[$id] = $factory;
     }
 
+    #[Override]
     public function get(string $id): mixed
     {
         if (isset($this->instances[$id])) {
@@ -43,24 +46,20 @@ final class Container
         return $this->instances[$id];
     }
 
+    #[Override]
     public function has(string $id): bool
     {
         return isset($this->factories[$id]) || isset($this->instances[$id]);
     }
 
-    /**
-     * Register a service provider.
-     */
+    #[Override]
     public function registerProvider(ServiceProvider $provider): void
     {
         $this->providers[] = $provider;
         $provider->register();
     }
 
-    /**
-     * Boot all registered service providers.
-     * This should be called after all providers are registered.
-     */
+    #[Override]
     public function boot(): void
     {
         if ($this->booted) {
@@ -72,5 +71,12 @@ final class Container
         }
 
         $this->booted = true;
+    }
+
+    /** @return list<ServiceProvider> */
+    #[Override]
+    public function getProviders(): array
+    {
+        return $this->providers;
     }
 }

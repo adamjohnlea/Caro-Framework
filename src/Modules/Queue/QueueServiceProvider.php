@@ -8,7 +8,7 @@ use App\Database\Database;
 use App\Modules\Queue\Application\Services\QueueService;
 use App\Modules\Queue\Domain\Repositories\QueueRepositoryInterface;
 use App\Modules\Queue\Infrastructure\Repositories\SqliteQueueRepository;
-use App\Shared\Container\Container;
+use App\Shared\Container\ContainerInterface;
 use App\Shared\Providers\ServiceProvider;
 use Override;
 use Psr\Log\LoggerInterface;
@@ -35,7 +35,7 @@ final class QueueServiceProvider extends ServiceProvider
                 $queueRepository = $this->container->get(QueueRepositoryInterface::class);
                 /** @var LoggerInterface $logger */
                 $logger = $this->container->get(LoggerInterface::class);
-                /** @var Container $container */
+                /** @var ContainerInterface $container */
                 $container = $this->container;
 
                 return new QueueService($queueRepository, $logger, $container);
