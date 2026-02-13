@@ -11,13 +11,11 @@ use App\Database\MigrationRunner;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
 use App\Http\ControllerDispatcher;
-use App\Http\Middleware\AuthenticationMiddleware;
-use App\Http\Middleware\AuthorizationMiddleware;
-use App\Http\Middleware\CsrfMiddleware;
 use App\Http\Middleware\MiddlewarePipeline;
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\MiddlewareProviderInterface;
+use App\Http\RouteProviderInterface;
 use App\Http\Router;
-use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Email\EmailServiceProvider;
 use App\Modules\Queue\QueueServiceProvider;
@@ -117,10 +115,11 @@ $router = new Router();
 $router->get('/', HomeController::class, 'index', 'home');
 $router->get('/health', HealthController::class, 'check', 'health');
 
-// Load module routes
-if ($config['modules']['auth']) {
-    $authRoutes = require __DIR__ . '/../src/Modules/Auth/routes.php';
-    $authRoutes($router);
+// Load module routes from providers
+foreach ($container->getProviders() as $provider) {
+    if ($provider instanceof RouteProviderInterface) {
+        $provider->routes($router);
+    }
 }
 
 // ── Middleware ────────────────────────────────────────────────────────
@@ -128,12 +127,13 @@ if ($config['modules']['auth']) {
 $pipeline = new MiddlewarePipeline();
 $pipeline->add(new SecurityHeadersMiddleware());
 
-if ($config['modules']['auth']) {
-    /** @var AuthenticationService $authService */
-    $authService = $container->get(AuthenticationService::class);
-    $pipeline->add(new AuthenticationMiddleware($authService));
-    $pipeline->add(new CsrfMiddleware($authService));
-    $pipeline->add(new AuthorizationMiddleware($authService));
+// Load module middleware from providers
+foreach ($container->getProviders() as $provider) {
+    if ($provider instanceof MiddlewareProviderInterface) {
+        foreach ($provider->middleware() as $middleware) {
+            $pipeline->add($middleware);
+        }
+    }
 }
 
 // ── Dispatch ─────────────────────────────────────────────────────────

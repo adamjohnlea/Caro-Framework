@@ -7,6 +7,14 @@ namespace App\Modules\Auth;
 use App\Database\Database;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\AuthenticationMiddleware;
+use App\Http\Middleware\AuthorizationMiddleware;
+use App\Http\Middleware\CsrfMiddleware;
+use App\Http\Middleware\MiddlewareInterface;
+use App\Http\MiddlewareProviderInterface;
+use App\Http\RouteAccessProviderInterface;
+use App\Http\RouteProviderInterface;
+use App\Http\Router;
 use App\Modules\Auth\Application\Services\AuthenticationService;
 use App\Modules\Auth\Application\Services\UserService;
 use App\Modules\Auth\Domain\Repositories\UserRepositoryInterface;
@@ -15,7 +23,7 @@ use App\Shared\Providers\ServiceProvider;
 use Override;
 use Twig\Environment;
 
-final class AuthServiceProvider extends ServiceProvider
+final class AuthServiceProvider extends ServiceProvider implements RouteProviderInterface, MiddlewareProviderInterface, RouteAccessProviderInterface
 {
     #[Override]
     public function register(): void
@@ -65,7 +73,6 @@ final class AuthServiceProvider extends ServiceProvider
     #[Override]
     public function boot(): void
     {
-        // Add auth globals to Twig
         /** @var Environment $twig */
         $twig = $this->container->get(Environment::class);
         /** @var AuthenticationService $authService */
@@ -75,5 +82,44 @@ final class AuthServiceProvider extends ServiceProvider
         $twig->addGlobal('currentUser', $currentUser);
         $twig->addGlobal('csrf_token', $authService->getCsrfToken());
         $twig->addGlobal('authEnabled', true);
+    }
+
+    #[Override]
+    public function routes(Router $router): void
+    {
+        $router->get('/login', AuthController::class, 'showLogin', 'login');
+        $router->post('/login', AuthController::class, 'login', 'login.post');
+        $router->get('/logout', AuthController::class, 'logout', 'logout');
+
+        $router->get('/users', UserController::class, 'index', 'users.index');
+        $router->get('/users/create', UserController::class, 'create', 'users.create');
+        $router->post('/users', UserController::class, 'store', 'users.store');
+        $router->get('/users/{id}/edit', UserController::class, 'edit', 'users.edit');
+        $router->post('/users/{id}/update', UserController::class, 'update', 'users.update');
+        $router->post('/users/{id}/delete', UserController::class, 'destroy', 'users.destroy');
+    }
+
+    /** @return list<MiddlewareInterface> */
+    #[Override]
+    public function middleware(): array
+    {
+        /** @var AuthenticationService $authService */
+        $authService = $this->container->get(AuthenticationService::class);
+
+        return [
+            new AuthenticationMiddleware($authService),
+            new CsrfMiddleware($authService),
+            new AuthorizationMiddleware($authService),
+        ];
+    }
+
+    /** @return array{public: list<string>, admin: list<string>} */
+    #[Override]
+    public function routeAccess(): array
+    {
+        return [
+            'public' => ['/login'],
+            'admin' => ['/users'],
+        ];
     }
 }
