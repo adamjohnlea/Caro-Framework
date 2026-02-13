@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 $config = require __DIR__ . '/../src/bootstrap.php';
 
-use App\Database\DatabaseFactory;
-use App\Database\MigrationRunner;
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
+use App\Database\Database;
+use App\Shared\Cli\CliBootstrap;
 
 echo "Caro Framework Health Check\n";
 echo "===========================\n";
 
-/** @var array{app: array{name: string}, database: array{driver: string, path: string, host: string, port: string, name: string, user: string, password: string}, modules: array{auth: bool, email: bool, queue: bool}} $config */
-$logger = new Logger('doctor');
-$logger->pushHandler(new StreamHandler('php://stderr', Logger::ERROR));
-
+/** @var array{app: array{env: string, debug: bool, name: string}, database: array{driver: string, path: string, host: string, port: string, name: string, user: string, password: string}, modules: array{auth: bool, email: bool, queue: bool}, ses: array{region: string, access_key: string, secret_key: string, from_address: string}} $config */
 $exitCode = 0;
 
 // Check database
 try {
-    $database = DatabaseFactory::create($config['database']);
+    $container = CliBootstrap::createContainer($config);
+
+    /** @var Database $database */
+    $database = $container->get(Database::class);
     $database->query('SELECT 1');
     $driver = ucfirst($config['database']['driver']);
     echo "[OK] Database: Connected ({$driver})\n";
@@ -32,9 +30,6 @@ try {
 // Check migrations
 if (isset($database)) {
     try {
-        $migrationRunner = new MigrationRunner($database, $logger);
-        $migrationRunner->run($config['modules']);
-
         $stmt = $database->query('SELECT COUNT(*) as count FROM migrations');
         /** @var array{count: string|int} $row */
         $row = $stmt->fetch();
@@ -64,7 +59,6 @@ if ($config['modules']['auth']) {
 
 // Check email module
 if ($config['modules']['email']) {
-    /** @var array{ses: array{access_key: string, secret_key: string}} $config */
     if ($config['ses']['access_key'] !== '' && $config['ses']['secret_key'] !== '') {
         echo "[OK] Email: Enabled (SES)\n";
     } else {

@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 $config = require __DIR__ . '/../src/bootstrap.php';
 
-use App\Database\DatabaseFactory;
-use App\Database\MigrationRunner;
 use App\Modules\Queue\Application\Services\QueueService;
-use App\Modules\Queue\Infrastructure\Repositories\SqliteQueueRepository;
 use App\Modules\Queue\Infrastructure\Worker;
+use App\Shared\Cli\CliBootstrap;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
-/** @var array{database: array{driver: string, path: string, host: string, port: string, name: string, user: string, password: string}, modules: array{auth: bool, email: bool, queue: bool}} $config */
+/** @var array{app: array{env: string, debug: bool, name: string}, database: array{driver: string, path: string, host: string, port: string, name: string, user: string, password: string}, modules: array{auth: bool, email: bool, queue: bool}, ses: array{region: string, access_key: string, secret_key: string, from_address: string}} $config */
 if (!$config['modules']['queue']) {
     echo "Queue module is not enabled. Set MODULE_QUEUE=true in .env\n";
     exit(1);
@@ -25,16 +24,15 @@ $queue = $options['queue'] ?? 'default';
 $sleepStr = $options['sleep'] ?? '3';
 $sleep = (int) $sleepStr;
 
-$logger = new Logger('worker');
-$logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
-$logger->pushHandler(new StreamHandler(__DIR__ . '/../storage/logs/worker.log', Logger::WARNING));
+$container = CliBootstrap::createContainer($config, [
+    new StreamHandler('php://stdout', Logger::INFO),
+    new StreamHandler(__DIR__ . '/../storage/logs/worker.log', Logger::WARNING),
+]);
 
-$database = DatabaseFactory::create($config['database']);
-$migrationRunner = new MigrationRunner($database, $logger);
-$migrationRunner->run($config['modules']);
-
-$queueRepository = new SqliteQueueRepository($database);
-$queueService = new QueueService($queueRepository, $logger);
+/** @var QueueService $queueService */
+$queueService = $container->get(QueueService::class);
+/** @var LoggerInterface $logger */
+$logger = $container->get(LoggerInterface::class);
 
 $worker = new Worker($queueService, $logger);
 
