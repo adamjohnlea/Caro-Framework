@@ -12,6 +12,8 @@ use App\Modules\Email\EmailServiceProvider;
 use App\Modules\Queue\QueueServiceProvider;
 use App\Shared\Container\Container;
 use App\Shared\Container\ContainerInterface;
+use App\Shared\Events\EventDispatcher;
+use App\Shared\Events\EventDispatcherInterface;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -40,6 +42,8 @@ final class CliBootstrap
 
             return $logger;
         });
+
+        $container->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new EventDispatcher());
 
         $container->set(Database::class, static function () use ($config, $container): Database {
             $database = DatabaseFactory::create($config['database']);

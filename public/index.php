@@ -22,6 +22,8 @@ use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Email\EmailServiceProvider;
 use App\Modules\Queue\QueueServiceProvider;
 use App\Shared\Container\Container;
+use App\Shared\Events\EventDispatcher;
+use App\Shared\Events\EventDispatcherInterface;
 use App\Shared\Twig\AssetVersionExtension;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -86,6 +88,8 @@ $container->set(HealthController::class, static function () use ($container): He
 
     return new HealthController($database);
 });
+
+$container->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new EventDispatcher());
 
 // ── Module Service Providers ──────────────────────────────────────────
 
