@@ -56,7 +56,7 @@ src/
     Exceptions/       # Shared exception types
     Providers/        # ServiceProvider base class
     Session/          # FlashMessageService (session-based flash messages)
-    Twig/             # Twig extensions (AppExtension, UrlGeneratorInterface)
+    Twig/             # Twig extensions (AppExtension, UrlGeneratorInterface — impl in Http/UrlGenerator)
   Views/
     layouts/          # Base Twig templates
     errors/           # Error page templates
@@ -81,6 +81,12 @@ tests/
 - **Shared** can depend on Database and ServiceProvider (for bootstrapping)
 - **ServiceProvider** can depend on all layers (wires everything together)
 
+### Bootstrap Pattern
+- The router is instantiated twice in `public/index.php`:
+  1. First pass without Twig to collect routes from service providers
+  2. Second pass with Twig after UrlGenerator is created (ensures UrlGenerator is available for error page rendering)
+- This pattern allows error pages (404, 500) to use `{{ path() }}` function while maintaining clean dependency order
+
 ## Modules
 
 All modules are opt-in via `.env` config flags.
@@ -95,7 +101,8 @@ All modules are opt-in via `.env` config flags.
 - Middleware: `AuthenticationMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware` (in `src/Modules/Auth/Http/Middleware/`)
 - Self-registers routes, middleware, and route access via provider interfaces
 - Controllers live in `src/Modules/Auth/Http/Controllers/`
-- **Tests:** Comprehensive test coverage (55 tests) including feature tests for auth flows
+- **Views:** Module-scoped Twig templates under `@auth` namespace (e.g., `@auth/login.twig`, `@auth/users/create.twig`)
+- **Tests:** Comprehensive test coverage (239+ tests across Unit, Integration, and Feature suites)
 - CLI: `php cli/create-admin.php --email=admin@example.com --password=secret123`
 
 ### Email Module (`MODULE_EMAIL=true`)
@@ -172,7 +179,7 @@ php cli/doctor.php
   - Implement `MiddlewareProviderInterface` to self-register middleware
   - Implement `RouteAccessProviderInterface` to declare public/admin routes
 - **URL generation**: Use `UrlGenerator::generate('route.name', ['param' => value])` in controllers, `{{ path('route.name') }}` in templates
-- **Flash messages**: Use `FlashMessageService::flash('success', 'message')` after redirect actions. Rendered automatically in `base.twig`.
+- **Flash messages**: Use `FlashMessageService::flash('success', 'message')` after redirect actions. Rendered automatically in `base.twig` via Twig functions: `has_flash()`, `get_flash_message()`, `get_flash_type()`, and `flash_messages()` for iteration.
 - **Event dispatcher**: Use `EventDispatcherInterface` for cross-module communication without direct dependencies
 - **CLI tools**: Use `CliBootstrap::createContainer($config)` in CLI scripts instead of manual container wiring
 
@@ -236,5 +243,5 @@ php cli/doctor.php
    }
    ```
    Routes, middleware, and route access are automatically collected from the provider interfaces — no additional wiring needed.
-10. Add Twig templates under `src/Views/{module}/` — use `{{ path('route.name') }}` for URLs
+10. Add Twig templates under `src/Modules/{ModuleName}/Views/` and register namespace in provider's `boot()` method via `$loader->addPath(__DIR__ . '/Views', 'modulename')` — use `{{ path('route.name') }}` for URLs
 11. Ensure deptrac passes — no layer violations
