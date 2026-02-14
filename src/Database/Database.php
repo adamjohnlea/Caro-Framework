@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Database\Grammar\GrammarFactory;
 use App\Database\Grammar\GrammarInterface;
 use App\Shared\Database\QueryBuilder;
 use PDO;
@@ -30,7 +31,7 @@ final readonly class Database
         }
 
         // Use provided grammar or default to SqliteGrammar for backward compatibility
-        $this->grammar = $grammar ?? Grammar\GrammarFactory::create('sqlite');
+        $this->grammar = $grammar ?? GrammarFactory::create('sqlite');
     }
 
     public function getPdo(): PDO

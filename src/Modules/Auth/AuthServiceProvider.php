@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
+use Twig\Loader\FilesystemLoader;
 use App\Database\Database;
 use App\Http\Middleware\MiddlewareInterface;
 use App\Http\MiddlewareProviderInterface;
@@ -96,7 +97,7 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
 
         // Register @auth Twig namespace
         $loader = $twig->getLoader();
-        if ($loader instanceof \Twig\Loader\FilesystemLoader) {
+        if ($loader instanceof FilesystemLoader) {
             $loader->addPath(__DIR__ . '/Views', 'auth');
         }
     }
