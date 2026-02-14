@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Database;
 
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 final readonly class MigrationRunner
 {
@@ -56,7 +57,7 @@ final readonly class MigrationRunner
             $this->database->exec($sql);
             $this->recordMigration($filename);
             $this->database->commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->database->rollBack();
             throw $e;
         }

@@ -48,7 +48,7 @@ final readonly class UserService
         }
 
         // Check for duplicate email
-        if ($emailAddress !== null) {
+        if ($emailAddress instanceof EmailAddress) {
             $existing = $this->userRepository->findByEmail($emailAddress->getValue());
             if ($existing instanceof User) {
                 $fieldErrors['email'] = 'A user with this email already exists';
@@ -129,15 +129,15 @@ final readonly class UserService
         }
 
         // Apply validated changes
-        if ($emailAddress !== null) {
+        if ($emailAddress instanceof EmailAddress) {
             $user->setEmail($emailAddress);
         }
 
-        if ($hashedPassword !== null) {
+        if ($hashedPassword instanceof HashedPassword) {
             $user->setPassword($hashedPassword);
         }
 
-        if ($userRole !== null) {
+        if ($userRole instanceof UserRole) {
             $user->setRole($userRole);
         }
 

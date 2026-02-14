@@ -18,7 +18,7 @@ final readonly class SqliteGrammar implements GrammarInterface
         ?int $offset,
         array $joins,
     ): string {
-        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
+        $quotedColumns = array_map($this->quoteIdentifier(...), $columns);
         $sql = 'SELECT ' . ($columns === [] ? '*' : implode(', ', $quotedColumns));
         $sql .= ' FROM ' . $this->quoteIdentifier($table);
         $sql .= $this->compileJoins($joins);
@@ -45,7 +45,7 @@ final readonly class SqliteGrammar implements GrammarInterface
     #[Override]
     public function compileInsert(string $table, array $columns): string
     {
-        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
+        $quotedColumns = array_map($this->quoteIdentifier(...), $columns);
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
 
         return 'INSERT INTO ' . $this->quoteIdentifier($table) . ' (' . implode(', ', $quotedColumns) . ') VALUES (' . $placeholders . ')';
@@ -54,7 +54,7 @@ final readonly class SqliteGrammar implements GrammarInterface
     #[Override]
     public function compileInsertIgnore(string $table, array $columns): string
     {
-        $quotedColumns = array_map(fn (string $col): string => $this->quoteIdentifier($col), $columns);
+        $quotedColumns = array_map($this->quoteIdentifier(...), $columns);
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
 
         return 'INSERT OR IGNORE INTO ' . $this->quoteIdentifier($table) . ' (' . implode(', ', $quotedColumns) . ') VALUES (' . $placeholders . ')';

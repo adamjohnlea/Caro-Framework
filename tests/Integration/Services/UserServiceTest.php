@@ -347,7 +347,7 @@ final class UserServiceTest extends TestCase
 
         $users = $this->userService->findAll();
 
-        $emails = array_map(fn (User $u) => $u->getEmail()->getValue(), $users);
+        $emails = array_map(fn (User $u): string => $u->getEmail()->getValue(), $users);
         $this->assertContains('admin@example.com', $emails);
         $this->assertContains('viewer@example.com', $emails);
     }
