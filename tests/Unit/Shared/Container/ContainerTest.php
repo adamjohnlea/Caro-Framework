@@ -6,9 +6,9 @@ namespace Tests\Unit\Shared\Container;
 
 use App\Shared\Container\Container;
 use App\Shared\Container\ContainerInterface;
+use App\Shared\Exceptions\ServiceNotFoundException;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
-use RuntimeException;
 
 final class ContainerTest extends TestCase
 {
@@ -53,7 +53,7 @@ final class ContainerTest extends TestCase
     {
         $container = new Container();
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(ServiceNotFoundException::class);
         $container->get('unknown');
     }
 

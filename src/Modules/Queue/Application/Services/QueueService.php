@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Queue\Application\Services;
 
+use App\Modules\Queue\Domain\Exceptions\InvalidJobException;
 use App\Modules\Queue\Domain\JobInterface;
 use App\Modules\Queue\Domain\Models\QueuedJob;
 use App\Modules\Queue\Domain\Repositories\QueueRepositoryInterface;
 use App\Shared\Container\ContainerInterface;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Throwable;
 
 final readonly class QueueService
@@ -78,7 +78,7 @@ final readonly class QueueService
             $jobInstance = unserialize($payload, ['allowed_classes' => [$jobClass]]);
 
             if (!$jobInstance instanceof JobInterface) {
-                throw new RuntimeException('Deserialized job is not an instance of JobInterface');
+                throw InvalidJobException::notAnInstance($jobClass);
             }
 
             $jobInstance->handle($this->container);

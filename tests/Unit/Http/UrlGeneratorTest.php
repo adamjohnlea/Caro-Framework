@@ -6,8 +6,8 @@ namespace Tests\Unit\Http;
 
 use App\Http\Router;
 use App\Http\UrlGenerator;
+use App\Shared\Exceptions\RouteNotFoundException;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 final class UrlGeneratorTest extends TestCase
 {
@@ -36,7 +36,7 @@ final class UrlGeneratorTest extends TestCase
         $router = new Router();
         $generator = new UrlGenerator($router->getRoutes());
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(RouteNotFoundException::class);
         $generator->generate('nonexistent');
     }
 

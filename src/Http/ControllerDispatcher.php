@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Shared\Container\ContainerInterface;
+use App\Shared\Exceptions\DependencyResolutionException;
 use ReflectionMethod;
 use ReflectionNamedType;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -53,9 +53,7 @@ final readonly class ControllerDispatcher
                 continue;
             }
 
-            throw new RuntimeException(
-                sprintf('Cannot resolve parameter "$%s" for %s::%s()', $name, $controllerClass, $method),
-            );
+            throw DependencyResolutionException::parameterNotResolvable($name, $controllerClass, $method);
         }
 
         /** @var Response */

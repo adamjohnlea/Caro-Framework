@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Container;
 
+use App\Shared\Exceptions\ServiceNotFoundException;
 use App\Shared\Providers\ServiceProvider;
 use Override;
-use RuntimeException;
 
 final class Container implements ContainerInterface
 {
@@ -38,7 +38,7 @@ final class Container implements ContainerInterface
         }
 
         if (!isset($this->factories[$id])) {
-            throw new RuntimeException(sprintf('Service "%s" is not registered in the container.', $id));
+            throw ServiceNotFoundException::service($id);
         }
 
         $this->instances[$id] = ($this->factories[$id])();
