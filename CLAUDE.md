@@ -53,7 +53,7 @@ src/
     Container/        # ContainerInterface (PSR-11) and Container implementation
     Database/         # QueryBuilder (fluent, immutable)
     Events/           # EventDispatcherInterface and sync EventDispatcher
-    Exceptions/       # Shared exception types
+    Exceptions/       # Custom exception hierarchy (ServiceNotFound, RouteNotFound, DependencyResolution, Configuration, Validation)
     Providers/        # ServiceProvider base class
     Session/          # FlashMessageService (session-based flash messages)
     Twig/             # Twig extensions (AppExtension, UrlGeneratorInterface — impl in Http/UrlGenerator)
@@ -182,6 +182,11 @@ php cli/doctor.php
 - **Flash messages**: Use `FlashMessageService::flash('success', 'message')` after redirect actions. Rendered automatically in `base.twig` via Twig functions: `has_flash()`, `get_flash_message()`, `get_flash_type()`, and `flash_messages()` for iteration.
 - **Event dispatcher**: Use `EventDispatcherInterface` for cross-module communication without direct dependencies
 - **CLI tools**: Use `CliBootstrap::createContainer($config)` in CLI scripts instead of manual container wiring
+- **Exception handling**: Use semantic, context-specific exceptions instead of generic `RuntimeException`
+  - Shared exceptions (in `App\Shared\Exceptions\`): `ServiceNotFoundException`, `RouteNotFoundException`, `DependencyResolutionException`, `ConfigurationException`, `ValidationException`
+  - Module-specific exceptions: Create in `{ModuleName}/Domain/Exceptions/` (e.g., `InvalidJobException` in Queue module)
+  - Use static factory methods for consistent, descriptive exception creation (e.g., `ServiceNotFoundException::service($id)`)
+  - Enables granular try/catch blocks, better error pages (404 vs 500 vs 422), and improved debugging
 
 ### Frontend
 - Tailwind CSS 4 uses `@import "tailwindcss"` (not `@tailwind` directives)
@@ -200,9 +205,10 @@ php cli/doctor.php
 
 1. Create the directory structure under `src/Modules/{ModuleName}/`
 2. Start with Domain layer (value objects, models, repository interfaces)
-3. Add Application layer (services)
-4. Add Infrastructure layer (SQLite repositories using QueryBuilder for simple CRUD)
-5. Create `{ModuleName}ServiceProvider.php` in the module root. Implement provider interfaces for routes, middleware, and route access as needed:
+3. Create module-specific exceptions in `{ModuleName}/Domain/Exceptions/` if needed (e.g., `InvalidJobException`). Use static factory methods. Prefer shared exceptions for common scenarios.
+4. Add Application layer (services)
+5. Add Infrastructure layer (SQLite repositories using QueryBuilder for simple CRUD)
+6. Create `{ModuleName}ServiceProvider.php` in the module root. Implement provider interfaces for routes, middleware, and route access as needed:
    ```php
    final class FooServiceProvider extends ServiceProvider implements RouteProviderInterface, MiddlewareProviderInterface, RouteAccessProviderInterface
    {
@@ -233,15 +239,15 @@ php cli/doctor.php
        }
    }
    ```
-6. Place controllers in `src/Modules/{ModuleName}/Http/Controllers/` with namespace `App\Modules\{ModuleName}\Http\Controllers`
-7. Add SQL migration in `src/Modules/{ModuleName}/Database/Migrations/` using timestamp naming: `YYYY_MM_DD_HHMMSS_description.sql`
-8. Add module toggle to `.env.example`, `config/config.php`, and `MigrationRunner` module map
-9. Register provider in `public/index.php` behind the module flag:
+7. Place controllers in `src/Modules/{ModuleName}/Http/Controllers/` with namespace `App\Modules\{ModuleName}\Http\Controllers`
+8. Add SQL migration in `src/Modules/{ModuleName}/Database/Migrations/` using timestamp naming: `YYYY_MM_DD_HHMMSS_description.sql`
+9. Add module toggle to `.env.example`, `config/config.php`, and `MigrationRunner` module map
+10. Register provider in `public/index.php` behind the module flag:
    ```php
    if ($config['modules']['foo']) {
        $container->registerProvider(new FooServiceProvider($container, $config));
    }
    ```
    Routes, middleware, and route access are automatically collected from the provider interfaces — no additional wiring needed.
-10. Add Twig templates under `src/Modules/{ModuleName}/Views/` and register namespace in provider's `boot()` method via `$loader->addPath(__DIR__ . '/Views', 'modulename')` — use `{{ path('route.name') }}` for URLs
-11. Ensure deptrac passes — no layer violations
+11. Add Twig templates under `src/Modules/{ModuleName}/Views/` and register namespace in provider's `boot()` method via `$loader->addPath(__DIR__ . '/Views', 'modulename')` — use `{{ path('route.name') }}` for URLs
+12. Ensure deptrac passes — no layer violations
