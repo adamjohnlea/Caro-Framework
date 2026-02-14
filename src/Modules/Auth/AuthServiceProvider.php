@@ -93,6 +93,12 @@ final class AuthServiceProvider extends ServiceProvider implements RouteProvider
         $twig->addGlobal('currentUser', $currentUser);
         $twig->addGlobal('csrf_token', $authService->getCsrfToken());
         $twig->addGlobal('authEnabled', true);
+
+        // Register @auth Twig namespace
+        $loader = $twig->getLoader();
+        if ($loader instanceof \Twig\Loader\FilesystemLoader) {
+            $loader->addPath(__DIR__ . '/Views', 'auth');
+        }
     }
 
     #[Override]

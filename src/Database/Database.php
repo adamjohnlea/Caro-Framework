@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Database;
 
 use App\Database\Grammar\GrammarInterface;
-use App\Database\Grammar\SqliteGrammar;
 use App\Shared\Database\QueryBuilder;
 use PDO;
 use PDOStatement;
@@ -15,7 +14,7 @@ final readonly class Database
     private PDO $pdo;
     private GrammarInterface $grammar;
 
-    public function __construct(string $dsn, string $username = '', string $password = '')
+    public function __construct(string $dsn, string $username = '', string $password = '', ?GrammarInterface $grammar = null)
     {
         $this->pdo = new PDO(
             $dsn,
@@ -28,11 +27,10 @@ final readonly class Database
         if (str_starts_with($dsn, 'sqlite:')) {
             $this->pdo->exec('PRAGMA journal_mode=WAL');
             $this->pdo->exec('PRAGMA foreign_keys=ON');
-            $this->grammar = new SqliteGrammar();
-        } else {
-            // Default to SQLite grammar for now
-            $this->grammar = new SqliteGrammar();
         }
+
+        // Use provided grammar or default to SqliteGrammar for backward compatibility
+        $this->grammar = $grammar ?? Grammar\GrammarFactory::create('sqlite');
     }
 
     public function getPdo(): PDO

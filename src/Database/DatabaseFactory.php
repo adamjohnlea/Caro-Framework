@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Database\Grammar\GrammarFactory;
 use RuntimeException;
 
 final class DatabaseFactory
@@ -14,10 +15,11 @@ final class DatabaseFactory
     public static function create(array $config): Database
     {
         $driver = $config['driver'];
+        $grammar = GrammarFactory::create($driver);
 
         return match ($driver) {
-            'sqlite' => new Database(self::buildSqliteDsn($config['path'])),
-            'pgsql' => new Database(self::buildPgsqlDsn($config), $config['user'], $config['password']),
+            'sqlite' => new Database(self::buildSqliteDsn($config['path']), '', '', $grammar),
+            'pgsql' => new Database(self::buildPgsqlDsn($config), $config['user'], $config['password'], $grammar),
             default => throw new RuntimeException(sprintf('Unsupported database driver: %s', $driver)),
         };
     }

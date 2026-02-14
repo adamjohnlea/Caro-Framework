@@ -25,7 +25,7 @@ final readonly class AuthController
 
     public function showLogin(): Response
     {
-        $html = $this->twig->render('auth/login.twig', [
+        $html = $this->twig->render('@auth/login.twig', [
             'csrf_token' => $this->authService->getCsrfToken(),
         ]);
 
@@ -36,7 +36,7 @@ final readonly class AuthController
     {
         $token = (string) $request->request->get('_csrf_token', '');
         if (!$this->authService->validateCsrfToken($token)) {
-            $html = $this->twig->render('auth/login.twig', [
+            $html = $this->twig->render('@auth/login.twig', [
                 'error' => 'Invalid request. Please try again.',
                 'csrf_token' => $this->authService->getCsrfToken(),
             ]);
@@ -50,7 +50,7 @@ final readonly class AuthController
         $user = $this->authService->attempt($email, $password);
 
         if (!$user instanceof User) {
-            $html = $this->twig->render('auth/login.twig', [
+            $html = $this->twig->render('@auth/login.twig', [
                 'error' => 'Invalid email or password.',
                 'csrf_token' => $this->authService->getCsrfToken(),
                 'old' => ['email' => $email],

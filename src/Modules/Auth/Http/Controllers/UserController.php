@@ -31,7 +31,7 @@ final readonly class UserController
     {
         $users = $this->userService->findAll();
 
-        $html = $this->twig->render('users/index.twig', [
+        $html = $this->twig->render('@auth/users/index.twig', [
             'users' => $users,
         ]);
 
@@ -40,7 +40,7 @@ final readonly class UserController
 
     public function create(): Response
     {
-        $html = $this->twig->render('users/create.twig', [
+        $html = $this->twig->render('@auth/users/create.twig', [
             'roles' => UserRole::cases(),
         ]);
 
@@ -60,7 +60,7 @@ final readonly class UserController
 
             return new RedirectResponse($this->urlGenerator->generate('users.index'));
         } catch (ValidationException $e) {
-            $html = $this->twig->render('users/create.twig', [
+            $html = $this->twig->render('@auth/users/create.twig', [
                 'error' => $e->getMessage(),
                 'fieldErrors' => $e->getFieldErrors(),
                 'roles' => UserRole::cases(),
@@ -79,7 +79,7 @@ final readonly class UserController
             return new Response('Not Found', 404);
         }
 
-        $html = $this->twig->render('users/edit.twig', [
+        $html = $this->twig->render('@auth/users/edit.twig', [
             'user' => $user,
             'roles' => UserRole::cases(),
         ]);
@@ -109,7 +109,7 @@ final readonly class UserController
                 return new Response('Not Found', 404);
             }
 
-            $html = $this->twig->render('users/edit.twig', [
+            $html = $this->twig->render('@auth/users/edit.twig', [
                 'error' => $e->getMessage(),
                 'fieldErrors' => $e->getFieldErrors(),
                 'user' => $user,
