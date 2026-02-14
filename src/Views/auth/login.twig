@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="{{ asset('js/alpine.min.js') }}" defer></script>
 </head>
 <body class="bg-surface min-h-screen flex items-center justify-center">
     <main class="w-full max-w-sm px-6">
@@ -46,6 +46,7 @@
             <div>
                 <label for="email" class="block text-sm font-medium text-text-primary mb-1.5">Email</label>
                 <input type="email" name="email" id="email" required autofocus
+                       autocomplete="email"
                        value="{{ old.email is defined ? old.email : '' }}"
                        placeholder="you@company.com">
             </div>
@@ -53,6 +54,7 @@
             <div>
                 <label for="password" class="block text-sm font-medium text-text-primary mb-1.5">Password</label>
                 <input type="password" name="password" id="password" required
+                       autocomplete="current-password"
                        placeholder="Enter your password">
             </div>
 

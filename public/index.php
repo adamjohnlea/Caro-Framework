@@ -67,9 +67,8 @@ $container->set(Database::class, static function () use ($config, $container): D
 $flashMessageService = new FlashMessageService();
 $container->set(FlashMessageService::class, static fn (): FlashMessageService => $flashMessageService);
 
-$urlGenerator = null;
-
-$container->set(Environment::class, static function () use ($config, $flashMessageService, &$urlGenerator): Environment {
+// Twig will be configured after UrlGenerator is created
+$container->set(Environment::class, static function () use ($config, $flashMessageService, $container): Environment {
     $loader = new FilesystemLoader(__DIR__ . '/../src/Views');
     $twig = new Environment($loader, [
         'strict_variables' => true,
@@ -77,7 +76,14 @@ $container->set(Environment::class, static function () use ($config, $flashMessa
     ]);
 
     $twig->addGlobal('appName', $config['app']['name']);
-    /** @var ?UrlGenerator $urlGenerator */
+
+    // Get UrlGenerator from container (will be set later during boot)
+    $urlGenerator = null;
+    if ($container->has(UrlGenerator::class)) {
+        /** @var UrlGenerator $urlGenerator */
+        $urlGenerator = $container->get(UrlGenerator::class);
+    }
+
     $twig->addExtension(new AppExtension(
         __DIR__,
         $flashMessageService,
@@ -115,7 +121,9 @@ if ($config['modules']['auth']) {
     ini_set('session.cookie_httponly', '1'); // Prevent JavaScript access to session cookie
     ini_set('session.cookie_samesite', 'Strict'); // Prevent CSRF attacks via cookie
     ini_set('session.use_strict_mode', '1'); // Reject uninitialized session IDs
-    ini_set('session.cookie_secure', $config['app']['env'] === 'production' ? '1' : '0'); // HTTPS-only in production
+    // Set secure flag if HTTPS is being used (checks both $_SERVER vars that indicate HTTPS)
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443;
+    ini_set('session.cookie_secure', $isHttps ? '1' : '0');
     ini_set('session.gc_maxlifetime', '1800'); // 30-minute session lifetime
     ini_set('session.cookie_lifetime', '0'); // Session cookie expires when browser closes
 
@@ -146,9 +154,8 @@ foreach ($container->getProviders() as $provider) {
 
 // ── Routes ───────────────────────────────────────────────────────────
 
-/** @var Environment $twig */
-$twig = $container->get(Environment::class);
-$router = new Router($twig);
+// Create router without Twig first (Twig needs UrlGenerator)
+$router = new Router();
 
 // Core routes
 $router->get('/', HomeController::class, 'index', 'home');
@@ -165,6 +172,22 @@ foreach ($container->getProviders() as $provider) {
 
 $urlGenerator = new UrlGenerator($router->getRoutes());
 $container->set(UrlGenerator::class, static fn (): UrlGenerator => $urlGenerator);
+
+// Now instantiate Twig (which will get the UrlGenerator from container)
+/** @var Environment $twig */
+$twig = $container->get(Environment::class);
+
+// Update router with Twig for 404 rendering
+$router = new Router($twig);
+
+// Re-register all routes with the new router instance
+$router->get('/', HomeController::class, 'index', 'home');
+$router->get('/health', HealthController::class, 'check', 'health');
+foreach ($container->getProviders() as $provider) {
+    if ($provider instanceof RouteProviderInterface) {
+        $provider->routes($router);
+    }
+}
 
 // Boot all providers (runs boot() methods — after URL generator so Twig has access)
 $container->boot();
