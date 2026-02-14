@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
-use Twig\Loader\FilesystemLoader;
 use App\Database\Database;
 use App\Http\Middleware\MiddlewareInterface;
 use App\Http\MiddlewareProviderInterface;
@@ -26,6 +25,7 @@ use App\Shared\Providers\ServiceProvider;
 use App\Shared\Session\FlashMessageService;
 use Override;
 use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 final class AuthServiceProvider extends ServiceProvider implements RouteProviderInterface, MiddlewareProviderInterface, RouteAccessProviderInterface
 {
