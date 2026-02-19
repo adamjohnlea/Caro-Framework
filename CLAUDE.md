@@ -131,24 +131,51 @@ All modules are opt-in via `.env` config flags.
 
 ## Development Workflow
 
+### Initial Setup
+```bash
+composer hooks:install   # Set up pre-commit git hooks (enforces quality checks)
+```
+
+**Database setup:**
+```bash
+touch storage/database.sqlite
+chmod -R 775 storage
+```
+
+Migrations run automatically on the first web request.
+
 ### TDD is mandatory
 Write tests first. Red-Green-Refactor. Every new feature, bug fix, or refactoring must have test coverage.
 
 ### Quality checks
 ```bash
-composer quality    # Runs: cs-check, phpstan, deptrac, test
-composer cs-fix     # Auto-fix code style
-composer rector:fix # Auto-apply Rector refactorings
+composer quality       # Runs: cs-check, phpstan, deptrac, test
+composer test          # Run all tests
+composer test:coverage # Generate HTML coverage report
+composer cs-fix        # Auto-fix code style
+composer rector:fix    # Auto-apply Rector refactorings
 ```
 
 **ALWAYS run `composer quality` before every commit.** No exceptions, even for template-only changes.
 
 The pre-commit hook enforces this, but run it manually to catch issues early.
 
+### Running Specific Tests
+```bash
+vendor/bin/phpunit --testsuite Unit        # Run only unit tests
+vendor/bin/phpunit --testsuite Integration # Run only integration tests
+vendor/bin/phpunit --testsuite Feature     # Run only feature tests
+vendor/bin/phpunit tests/Unit/Path/To/TestFile.php  # Run a single test file
+vendor/bin/phpunit --filter testMethodName  # Run a specific test method
+```
+
 ### Building CSS
 ```bash
 npm run build  # One-time build
 npm run dev    # Watch mode
+
+# Copy Alpine.js for interactivity (required after npm install)
+cp node_modules/alpinejs/dist/cdn.min.js public/js/alpine.min.js
 ```
 
 ### CLI Tools
